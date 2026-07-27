@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+/*
+ * Third Degree — design tokens (see design-system/third-degree/MASTER.md)
+ * Dark-first: interrogation-lamp amber on warm charcoal. Deliberately NOT
+ * blue-slate + acid green, per BUILD_PLAN §7.
+ */
+:root {
+  --bg: #14100b;
+  --surface: #1d1712;
+  --surface-2: #272019;
+  --line: #3b3226;
+  --ink: #f3ede3;
+  --ink-muted: #a79a85;
+  --lamp: #ffb224;
+  --lamp-bright: #ffc95c;
+  --ok: #58c08a;
+  --err: #e5484d;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-lamp: var(--lamp);
+  --color-lamp-bright: var(--lamp-bright);
+  --color-ok: var(--ok);
+  --color-err: var(--err);
+  --font-display: var(--font-bricolage);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-plex-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--lamp);
+  color: var(--bg);
+}
+
+/* Keyboard-first: visible focus everywhere (BUILD_PLAN §7) */
+:focus-visible {
+  outline: 2px solid var(--lamp);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* The signature element: the interrogation lamp. */
+.lamp-glow {
+  background:
+    radial-gradient(ellipse 55% 42% at 50% -6%, rgba(255, 178, 36, 0.16), transparent 70%),
+    radial-gradient(ellipse 30% 22% at 50% -4%, rgba(255, 201, 92, 0.12), transparent 70%);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fade-up 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.pulse-soft {
+  animation: pulse-soft 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-up,
+  .pulse-soft {
+    animation: none;
+  }
+}
