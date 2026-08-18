@@ -83,3 +83,11 @@ User.
 
 `utils/authHelper.ts` is the planted one. Expect the score to drop by ten and the feedback to
 name that file as nonexistent.
+
+## What these scored when I ran them on production
+
+- Answer A: **90**, with "you nailed the concurrency vs sequential distinction... only minor
+  gap: you didn't explicitly say the map produces an array of Promises". Layer 1 is
+  model-graded, so expect a few points of drift on the day.
+- Answer B: **65, medium**, ending "...and leaned on utils/authHelper.ts, which does not
+  exist." That number is deterministic and will not drift.
