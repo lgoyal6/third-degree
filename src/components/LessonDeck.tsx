@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { LessonCard } from "@/lib/types";
+import StreakBadge from "@/components/StreakBadge";
+import { DECK_POINTS, recordCompletion } from "@/lib/progress";
 
 interface Deck {
   lessons: LessonCard[];
@@ -86,6 +88,14 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
 
   useEffect(() => {
     if (deck) window.localStorage.setItem(posKey(jobId), String(index));
+  }, [deck, index, jobId]);
+
+  // Reaching the last card is finishing the deck: the grill CTA lives there, and
+  // paying out only on Next-past-the-end would pay for nothing.
+  useEffect(() => {
+    if (deck && deck.lessons.length > 0 && index >= deck.lessons.length - 1) {
+      recordCompletion(`lessons:${jobId}`, DECK_POINTS);
+    }
   }, [deck, index, jobId]);
 
   const total = deck?.lessons.length ?? 0;
@@ -181,9 +191,12 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
             {deck.repo.name}
           </h1>
         </div>
-        <p className="font-mono text-xs text-ink-muted">
-          {index + 1} / {total}
-        </p>
+        <div className="flex flex-col items-end gap-1">
+          <p className="font-mono text-xs text-ink-muted">
+            {index + 1} / {total}
+          </p>
+          <StreakBadge />
+        </div>
       </header>
 
       <ol className="flex gap-1.5" aria-label="Deck progress">

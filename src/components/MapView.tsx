@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CategoryNode, MapJob, RouteInfo, Stage } from "@/lib/types";
 import DepGraph from "@/components/DepGraph";
+import StreakBadge from "@/components/StreakBadge";
 
 const STAGE_LABELS: [Stage, string][] = [
   ["meta", "Finding the repo"],
@@ -125,7 +126,10 @@ export default function MapView({ jobId }: { jobId: string }) {
       {/* Repo header */}
       {meta ? (
         <header className="fade-up">
-          <p className="font-mono text-xs text-ink-muted">under the lamp</p>
+          <div className="flex items-baseline justify-between gap-4">
+            <p className="font-mono text-xs text-ink-muted">under the lamp</p>
+            <StreakBadge />
+          </div>
           <h1 className="font-display mt-1 text-4xl font-bold tracking-tight">
             {meta.owner}
             <span className="text-ink-muted">/</span>

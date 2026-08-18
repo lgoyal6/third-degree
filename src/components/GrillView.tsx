@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GrillView as ViewState } from "@/lib/grill/view";
 import { VERDICT_COPY, type Verdict } from "@/lib/grill/types";
+import StreakBadge from "@/components/StreakBadge";
+import { recordCompletion } from "@/lib/progress";
 
 const LAYER_LABEL: Record<number, string> = { 1: "fundamentals", 2: "modules", 3: "seams", 4: "the whole system" };
 const POLL_MS = 900;
@@ -54,6 +56,12 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
     }, 1000);
     return () => clearInterval(t);
   }, []);
+
+  // A finished session pays out once, whether it was the ladder or the express
+  // path; recordCompletion is keyed, so reloading the verdict is free.
+  useEffect(() => {
+    if (state?.finished) recordCompletion(`grill:${sessionId}`, state.score ?? 0);
+  }, [state?.finished, state?.score, sessionId]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -160,8 +168,11 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
           {state.repo.owner}/{state.repo.name} · question {state.currentIndex + 1} of {state.total} ·{" "}
           <span className="text-lamp">{LAYER_LABEL[q.layer]}</span>
         </span>
-        <span aria-label="elapsed time">
-          {String(Math.floor(elapsed / 60)).padStart(2, "0")}:{String(elapsed % 60).padStart(2, "0")}
+        <span className="flex items-baseline gap-5">
+          <StreakBadge />
+          <span aria-label="elapsed time">
+            {String(Math.floor(elapsed / 60)).padStart(2, "0")}:{String(elapsed % 60).padStart(2, "0")}
+          </span>
         </span>
       </div>
 
@@ -268,6 +279,9 @@ function ScoreScreen({ state }: { state: ViewState }) {
       <section className="lamp-glow fade-up rounded-2xl border border-lamp/30 bg-surface p-8 text-center">
         <p className="font-mono text-xs text-ink-muted">
           {state.repo.owner}/{state.repo.name} · the verdict
+        </p>
+        <p className="mt-2">
+          <StreakBadge />
         </p>
         <p className="font-display mt-4 text-8xl font-bold text-lamp">{state.score}</p>
         <p className="font-display mt-2 text-2xl font-semibold uppercase tracking-widest">{verdict}</p>
