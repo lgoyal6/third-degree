@@ -75,8 +75,21 @@ export interface StackInfo {
 
 export interface MapSummary {
   text: string;
+  structure: string; // how the code is organized and how the pieces connect
   startHere: { file: string; reason: string };
   generatedBy: "claude" | "fallback";
+}
+
+export interface DepNode {
+  id: string; // repo-relative file path
+  cat: "Frontend" | "Backend" | "Data" | "Infra";
+  loc: number;
+  deg: number; // in + out degree
+}
+
+export interface DepEdge {
+  s: string; // importer
+  t: string; // imported
 }
 
 export interface CodeMap {
@@ -89,6 +102,7 @@ export interface CodeMap {
   routes?: RouteInfo[];
   models?: ModelInfo[];
   categories?: CategoryNode[];
+  graph?: { nodes: DepNode[]; edges: DepEdge[] };
   summary?: MapSummary;
 }
 

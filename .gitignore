@@ -42,4 +42,5 @@ next-env.d.ts
 
 # third-degree
 .repos/
+.data/
 !.env.example

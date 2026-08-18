@@ -47,7 +47,7 @@ This section outranks everything below it, because the stated goal is users.
 Everything hangs off this ladder. A repo gets decomposed, then questions are generated at each rung, ascending. **Launch ships Layers 0–2 (plus static-analysis Layer 3 questions); Layers 4–5 come later.**
 
 **Layer 0 — Map** (no questions, pure orientation)
-Languages, frameworks, dependency list, entry points, routes, data model, "what this app does" in three sentences. Split into **Frontend / Backend / Data / Infra**, then subdivided — under Backend: API routes, business logic, data access, auth, background jobs. Rendered as an explorable map. First-run magic moment; something must appear on screen in seconds (progressive render), the full map in under 90.
+Languages, frameworks, dependency list, entry points, routes, data model, "what this app does" in three sentences **plus a "how it's organized" walkthrough**. Split into **Frontend / Backend / Data / Infra**, then subdivided — under Backend: API routes, business logic, data access, auth, background jobs. Rendered as a guided tour that teaches before it tests: blurb first, then structure, then **an interactive dependency graph of every file and import** (the wiring diagram — hover to see blast radius visually), and only then the grill CTA. First-run magic moment; something must appear on screen in seconds (progressive render), the full map in under 90.
 
 **Layer 1 — Atoms** (language & framework literacy)
 Short questions on real snippets from their code. Not "what is async" — "here's your `getUser`, the `await` on line 12 is removed, what does the caller receive?" Language semantics, framework idioms and limits, and small algorithmic reasoning where their code actually contains it (the sort, the nested filter, the O(n²) lookup in the render loop).
@@ -76,6 +76,8 @@ Concrete upgrades to what they built — UI techniques, accessibility, error and
 | Output | Score + share card | Progress, review cards | Shareable recording |
 
 Grill is Defend-lite: it exists at launch because it's the acquisition loop. Learn is the product people stay for — every missed Grill question is an on-ramp ("you got this wrong — want to actually understand it?"). Full Defend mode (timed, recorded, shareable session) is the polished endgame, not the starting point. Help and assessment never coexist in one mode — the companion destroys any timing signal.
+
+**Grill questions climb from the ground up** (decided Jul 27, 2026): fundamentals first (the language/DSA constructs their code actually uses — the array chain, the await, the loop complexity), then function behavior, then modules (routes, models), then seams (blast radius). Never cold-open with a structural question — the user meets easy ground they can stand on, then the floor rises.
 
 ---
 
@@ -200,6 +202,30 @@ Layer 4 scale-pressure questions, Layer 5 upgrade diffs.
 
 **M6 — Full Defend + multi-repo.** *December — before spring interview season.*
 Timed, unassisted, recorded, shareable session link. Portfolio view, cross-repo concept tracking, "I have an interview Thursday on these 4 repos" cram path.
+
+---
+
+## 10a. Deferred platform direction
+
+*Captured Aug 17, 2026, scoping the Stellic Pathfinders submission. These are wanted but did not fit the Aug 21 deadline. Shipped in that submission: lesson deck, express describe-path, browser-local streak, GitHub OAuth. Full spec in `docs/specs/2026-08-17-pathfinders-submission-design.md`.*
+
+**Identity layer.** Profile with name, school, and topic selection, in the LeetCode/NeetCode mold. Everything below marked *(needs identity)* is blocked on this. Note the tension with §2: an account gate in front of the first map trades the share loop for a retention loop. Decide that deliberately, not by drift.
+
+**Durable streak, points, leaderboard** *(needs identity)*. The submission ships a browser-local streak, which resets on a cache clear and cannot follow a user across devices. A real one needs server-side per-user state. Weigh against §12.5, which accepts churn and names share rate, not retention, as the metric that matters pre-M2; and against §11, which rules out leaderboards for v1.
+
+**CV as an entry path.** Upload a resume, extract the listed projects, match them to repos. Strong acquisition fit, because interview panic presents as resume anxiety, so the CV is the artifact the panic is already attached to.
+
+**GitHub App.** Replaces the submission's OAuth App. Gives genuine persistent installation and per-repo permissions, instead of OAuth's coarse `repo` scope that asks for read and write across every repository the user owns.
+
+**Pseudocode-to-code bridge.** Highest-value item in this list. Write pseudocode and convert it line by line to real code, or generate pseudocode from code you already shipped. Nothing in the market does this well, and it targets the thesis precisely: owning syntax you did not write. Build this before anything else here.
+
+**Sandboxed code-writing problems.** Not "two sum" but "write this API endpoint", "add a security layer to this route", scoped to their own project. This is the single largest engineering commitment in the list: it needs a sandbox plus a grading harness per problem. Watch §5 carefully, because the cheap path is LLM-graded output, which is exactly what §5 forbids.
+
+**System design canvas.** Layer 4 and 5 as drag-and-drop flowcharts and architecture diagrams, not just prose. The express describe-path shipped for Pathfinders is the text-only precursor; §5's groundedness scoring extends to a diagram by checking named nodes against the real graph.
+
+**Video lesson content.** Wanted, and the cost outlier by an order of magnitude. Flashcards captured most of the value for a fraction of the effort, which is why the submission ships cards. Revisit only if card completion data says people want more depth.
+
+**Full curriculum** *(needs identity)*. Ordered modules, prerequisites, mastery per concept tag, and "rebuild your own project" as the capstone. This is where §8's `ReviewCard` and emergent concept tags were already heading; it is M2 Learn mode grown up.
 
 ---
 

@@ -122,8 +122,57 @@ function add(bucket: Bucket, sub: string, f: FileEntry) {
   bucket.sub.set(sub, s);
 }
 
+export type BucketCat = "Frontend" | "Backend" | "Data" | "Infra";
+
 // Path-heuristic bucketing per BUILD_PLAN §3 Layer 0. Deliberately coarse for
 // M0 — the TS-compiler symbol graph refines this in M3.
+export function bucketFor(f: FileEntry): { cat: BucketCat; sub: string } | null {
+  const p = f.path.toLowerCase();
+  const base = p.split("/").pop() ?? "";
+
+  // Infra
+  if (
+    p.startsWith(".github/") || base === "dockerfile" || p.includes("docker-compose") ||
+    base === "vercel.json" || base === "fly.toml" || p.includes("terraform") ||
+    /\.(ya?ml)$/.test(base) && (p.includes("ci") || p.includes("workflow") || p.includes("deploy"))
+  ) {
+    return { cat: "Infra", sub: p.startsWith(".github/") ? "CI/CD" : "Deployment" };
+  }
+  if (/(^|\/)(next|tailwind|postcss|vite|webpack|tsconfig|eslint|prettier|babel)[.\w-]*\.(js|ts|mjs|cjs|json)$/.test(p)) {
+    return { cat: "Infra", sub: "Build config" };
+  }
+
+  // Data
+  if (base === "schema.prisma" || p.includes("/prisma/")) return { cat: "Data", sub: "Prisma schema" };
+  if (p.includes("migration") && (f.ext === ".sql" || f.ext === ".ts" || f.ext === ".js")) return { cat: "Data", sub: "Migrations" };
+  if (f.ext === ".sql") return { cat: "Data", sub: "SQL" };
+  if (/(^|\/)(db|database|drizzle|models|schema|schemas)\//.test(p) && CODE_EXTS.has(f.ext)) {
+    return { cat: "Data", sub: "Schema & models" };
+  }
+
+  // Backend
+  if (/(^|\/)(app|pages)\/api\//.test(p) || /(^|\/)app\/.*\/route\.(ts|js)$/.test(p)) return { cat: "Backend", sub: "API routes" };
+  if (/auth/.test(p) && CODE_EXTS.has(f.ext)) return { cat: "Backend", sub: "Auth" };
+  if (/(queue|worker|cron|jobs?)\//.test(p) && CODE_EXTS.has(f.ext)) return { cat: "Backend", sub: "Background jobs" };
+  if (/(^|\/)(server|api|services|controllers|routes)\//.test(p) && CODE_EXTS.has(f.ext)) return { cat: "Backend", sub: "Business logic" };
+  if (/(repository|repositories|dao|data-access)\//.test(p) && CODE_EXTS.has(f.ext)) return { cat: "Backend", sub: "Data access" };
+  if (/^middleware\.(ts|js)$/.test(base)) return { cat: "Backend", sub: "Middleware" };
+
+  // Frontend
+  if (/(^|\/)(components?|ui)\//.test(p)) return { cat: "Frontend", sub: "Components" };
+  if (/(^|\/)hooks?\//.test(p)) return { cat: "Frontend", sub: "Hooks" };
+  if (f.ext === ".css" || f.ext === ".scss") return { cat: "Frontend", sub: "Styles" };
+  if (/(^|\/)(app|pages)\//.test(p) && /\.(tsx|jsx|mdx)$/.test(base)) return { cat: "Frontend", sub: "Pages & layouts" };
+  if (p.startsWith("public/")) return { cat: "Frontend", sub: "Static assets" };
+  if (/\.(tsx|jsx|vue|svelte)$/.test(base)) return { cat: "Frontend", sub: "Components" };
+
+  // Remaining shared code → Backend/shared lib
+  if (/(^|\/)(lib|utils?|helpers?|shared|core)\//.test(p) && CODE_EXTS.has(f.ext)) {
+    return { cat: "Backend", sub: "Shared lib" };
+  }
+  return null;
+}
+
 export function categorize(files: FileEntry[]): CategoryNode[] {
   const buckets: Record<string, Bucket> = {
     Frontend: { files: 0, loc: 0, sub: new Map() },
@@ -133,52 +182,8 @@ export function categorize(files: FileEntry[]): CategoryNode[] {
   };
 
   for (const f of files) {
-    const p = f.path.toLowerCase();
-    const base = p.split("/").pop() ?? "";
-
-    // Infra
-    if (
-      p.startsWith(".github/") || base === "dockerfile" || p.includes("docker-compose") ||
-      base === "vercel.json" || base === "fly.toml" || p.includes("terraform") ||
-      /\.(ya?ml)$/.test(base) && (p.includes("ci") || p.includes("workflow") || p.includes("deploy"))
-    ) {
-      add(buckets.Infra, p.startsWith(".github/") ? "CI/CD" : "Deployment", f);
-      continue;
-    }
-    if (/(^|\/)(next|tailwind|postcss|vite|webpack|tsconfig|eslint|prettier|babel)[.\w-]*\.(js|ts|mjs|cjs|json)$/.test(p)) {
-      add(buckets.Infra, "Build config", f);
-      continue;
-    }
-
-    // Data
-    if (base === "schema.prisma" || p.includes("/prisma/")) { add(buckets.Data, "Prisma schema", f); continue; }
-    if (p.includes("migration") && (f.ext === ".sql" || f.ext === ".ts" || f.ext === ".js")) { add(buckets.Data, "Migrations", f); continue; }
-    if (f.ext === ".sql") { add(buckets.Data, "SQL", f); continue; }
-    if (/(^|\/)(db|database|drizzle|models|schema|schemas)\//.test(p) && CODE_EXTS.has(f.ext)) {
-      add(buckets.Data, "Schema & models", f);
-      continue;
-    }
-
-    // Backend
-    if (/(^|\/)(app|pages)\/api\//.test(p) || /(^|\/)app\/.*\/route\.(ts|js)$/.test(p)) { add(buckets.Backend, "API routes", f); continue; }
-    if (/auth/.test(p) && CODE_EXTS.has(f.ext)) { add(buckets.Backend, "Auth", f); continue; }
-    if (/(queue|worker|cron|jobs?)\//.test(p) && CODE_EXTS.has(f.ext)) { add(buckets.Backend, "Background jobs", f); continue; }
-    if (/(^|\/)(server|api|services|controllers|routes)\//.test(p) && CODE_EXTS.has(f.ext)) { add(buckets.Backend, "Business logic", f); continue; }
-    if (/(repository|repositories|dao|data-access)\//.test(p) && CODE_EXTS.has(f.ext)) { add(buckets.Backend, "Data access", f); continue; }
-    if (/^middleware\.(ts|js)$/.test(base)) { add(buckets.Backend, "Middleware", f); continue; }
-
-    // Frontend
-    if (/(^|\/)(components?|ui)\//.test(p)) { add(buckets.Frontend, "Components", f); continue; }
-    if (/(^|\/)hooks?\//.test(p)) { add(buckets.Frontend, "Hooks", f); continue; }
-    if (f.ext === ".css" || f.ext === ".scss") { add(buckets.Frontend, "Styles", f); continue; }
-    if (/(^|\/)(app|pages)\//.test(p) && /\.(tsx|jsx|mdx)$/.test(base)) { add(buckets.Frontend, "Pages & layouts", f); continue; }
-    if (p.startsWith("public/")) { add(buckets.Frontend, "Static assets", f); continue; }
-    if (/\.(tsx|jsx|vue|svelte)$/.test(base)) { add(buckets.Frontend, "Components", f); continue; }
-
-    // Remaining shared code → Backend/shared lib
-    if (/(^|\/)(lib|utils?|helpers?|shared|core)\//.test(p) && CODE_EXTS.has(f.ext)) {
-      add(buckets.Backend, "Shared lib", f);
-    }
+    const bucket = bucketFor(f);
+    if (bucket) add(buckets[bucket.cat], bucket.sub, f);
   }
 
   return Object.entries(buckets)

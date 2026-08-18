@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CategoryNode, MapJob, RouteInfo, Stage } from "@/lib/types";
+import DepGraph from "@/components/DepGraph";
 
 const STAGE_LABELS: [Stage, string][] = [
   ["meta", "Finding the repo"],
@@ -21,7 +22,25 @@ export default function MapView({ jobId }: { jobId: string }) {
   const router = useRouter();
   const [job, setJob] = useState<MapJob | null>(null);
   const [lost, setLost] = useState(false);
+  const [grilling, setGrilling] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startGrill = useCallback(async () => {
+    if (grilling) return;
+    setGrilling(true);
+    try {
+      const res = await fetch("/api/grill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      router.push(`/grill/${data.id}`);
+    } catch {
+      setGrilling(false);
+    }
+  }, [grilling, jobId, router]);
 
   const stop = useCallback(() => {
     if (timer.current) clearInterval(timer.current);
@@ -145,6 +164,34 @@ export default function MapView({ jobId }: { jobId: string }) {
         </ol>
       )}
 
+      {/* The blurb — orientation before anything else */}
+      {map.summary ? (
+        <section className="fade-up lamp-glow rounded-xl border border-lamp/30 bg-surface p-6" aria-label="Summary">
+          <p className="font-mono text-xs text-lamp">what this app is</p>
+          <p className="mt-2 leading-relaxed">{map.summary.text}</p>
+          <p className="mt-4 font-mono text-xs text-lamp">how it&apos;s organized</p>
+          <p className="mt-2 leading-relaxed text-ink-muted">{map.summary.structure}</p>
+          <div className="mt-5 flex flex-wrap items-center gap-3">
+            <span className="font-mono text-xs text-ink-muted">start reading →</span>
+            {ghBase ? (
+              <a
+                href={`${ghBase}/${map.summary.startHere.file}`}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-lg border border-line px-4 py-2 font-mono text-xs hover:border-lamp"
+              >
+                {map.summary.startHere.file}
+              </a>
+            ) : (
+              <span className="font-mono text-xs">{map.summary.startHere.file}</span>
+            )}
+            <span className="text-sm text-ink-muted">{map.summary.startHere.reason}</span>
+          </div>
+        </section>
+      ) : (
+        <SkeletonBlock h="h-44" label="summary" />
+      )}
+
       {/* Languages */}
       {map.languages ? (
         map.languages.length > 0 && (
@@ -215,6 +262,28 @@ export default function MapView({ jobId }: { jobId: string }) {
         <SkeletonBlock h="h-48" label="structure" />
       )}
 
+      {/* The wiring — every file, every import */}
+      {map.graph ? (
+        map.graph.nodes.length > 2 && (
+          <section className="fade-up" aria-label="Dependency graph">
+            <SectionTitle>
+              The wiring{" "}
+              <span className="text-ink-muted">
+                ({map.graph.nodes.length} files, {map.graph.edges.length} imports)
+              </span>
+            </SectionTitle>
+            <p className="mt-1 text-sm text-ink-muted">
+              Hover a file to see what depends on it. The big nodes are your load-bearing walls.
+            </p>
+            <div className="mt-3">
+              <DepGraph nodes={map.graph.nodes} edges={map.graph.edges} ghBase={ghBase} />
+            </div>
+          </section>
+        )
+      ) : (
+        <SkeletonBlock h="h-96" label="graph" />
+      )}
+
       {/* Routes */}
       {map.routes ? (
         map.routes.length > 0 && (
@@ -261,30 +330,22 @@ export default function MapView({ jobId }: { jobId: string }) {
         </section>
       )}
 
-      {/* Summary + start here — sits under the lamp */}
-      {map.summary ? (
-        <section className="fade-up lamp-glow rounded-xl border border-lamp/30 bg-surface p-6" aria-label="Summary">
-          <p className="font-mono text-xs text-lamp">what this app is</p>
-          <p className="mt-2 leading-relaxed">{map.summary.text}</p>
-          <div className="mt-5 flex flex-wrap items-center gap-3">
-            <span className="font-mono text-xs text-ink-muted">start here →</span>
-            {ghBase ? (
-              <a
-                href={`${ghBase}/${map.summary.startHere.file}`}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-lg bg-lamp px-4 py-2 font-mono text-xs font-medium text-bg hover:bg-lamp-bright"
-              >
-                {map.summary.startHere.file}
-              </a>
-            ) : (
-              <span className="font-mono text-xs">{map.summary.startHere.file}</span>
-            )}
-            <span className="text-sm text-ink-muted">{map.summary.startHere.reason}</span>
-          </div>
+      {/* The test — only after they've seen the whole map */}
+      {stage === "done" && (
+        <section className="fade-up lamp-glow rounded-xl border border-lamp/30 bg-surface p-8 text-center" aria-label="Start the grilling">
+          <p className="font-display text-2xl font-semibold">You&apos;ve seen the map.</p>
+          <p className="mt-2 text-ink-muted">
+            Now sit down. Questions climb from fundamentals to the seams — the way an interviewer would.
+          </p>
+          <button
+            onClick={startGrill}
+            disabled={grilling}
+            className="mt-5 cursor-pointer rounded-lg bg-lamp px-7 py-3 font-medium text-bg hover:bg-lamp-bright disabled:opacity-60"
+          >
+            {grilling ? "Preparing the room…" : "Grill me on it →"}
+          </button>
+          <p className="mt-3 font-mono text-xs text-ink-muted">~10 questions · typed answers · scored · shareable verdict</p>
         </section>
-      ) : (
-        stage !== "done" && <SkeletonBlock h="h-32" label="summary" />
       )}
 
       <footer className="pb-10 pt-4 text-center">

@@ -1,23 +1,16 @@
 import { randomUUID } from "node:crypto";
+import { redis } from "./redis";
 import type { CodeMap, MapJob, Stage } from "./types";
 
-// In-memory job store for M0. Survives HMR via globalThis; replaced by a
-// queue-fed worker when indexing moves off the request process (see BUILD_PLAN §9).
-const JOB_TTL_MS = 30 * 60 * 1000;
+// Map jobs are throwaway progress state: the client polls until "done", then
+// works from the rendered map. Serverless instances don't share memory, so this
+// lives in Redis (BUILD_PLAN §9) — the poll may land on a different instance
+// than the one indexing.
+const JOB_TTL_SECONDS = 30 * 60;
 
-const store = (globalThis as unknown as { __tdJobs?: Map<string, MapJob> });
-if (!store.__tdJobs) store.__tdJobs = new Map();
-const jobs = store.__tdJobs;
+const key = (id: string) => `job:${id}`;
 
-function sweep() {
-  const now = Date.now();
-  for (const [id, job] of jobs) {
-    if (now - job.updatedAt > JOB_TTL_MS) jobs.delete(id);
-  }
-}
-
-export function createJob(url: string): MapJob {
-  sweep();
+export async function createJob(url: string): Promise<MapJob> {
   const job: MapJob = {
     id: randomUUID(),
     url,
@@ -26,26 +19,33 @@ export function createJob(url: string): MapJob {
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };
-  jobs.set(job.id, job);
+  await redis().set(key(job.id), job, { ex: JOB_TTL_SECONDS });
   return job;
 }
 
-export function getJob(id: string): MapJob | undefined {
-  return jobs.get(id);
+export async function getJob(id: string): Promise<MapJob | undefined> {
+  const job = await redis().get<MapJob>(key(id));
+  return job ?? undefined;
 }
 
-export function updateJob(id: string, stage: Stage, partial?: Partial<CodeMap>): void {
-  const job = jobs.get(id);
+export async function updateJob(
+  id: string,
+  stage: Stage,
+  partial?: Partial<CodeMap>,
+): Promise<void> {
+  const job = await getJob(id);
   if (!job) return;
   job.stage = stage;
   if (partial) job.map = { ...job.map, ...partial };
   job.updatedAt = Date.now();
+  await redis().set(key(id), job, { ex: JOB_TTL_SECONDS });
 }
 
-export function failJob(id: string, message: string): void {
-  const job = jobs.get(id);
+export async function failJob(id: string, message: string): Promise<void> {
+  const job = await getJob(id);
   if (!job) return;
   job.stage = "error";
   job.error = message;
   job.updatedAt = Date.now();
+  await redis().set(key(id), job, { ex: JOB_TTL_SECONDS });
 }

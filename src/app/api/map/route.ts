@@ -1,9 +1,18 @@
+import { after } from "next/server";
 import { NextResponse } from "next/server";
 import { createJob } from "@/lib/jobs";
 import { parseRepoUrl } from "@/lib/github";
 import { runIndex } from "@/lib/indexer/run";
+import { checkLimit } from "@/lib/ratelimit";
+
+// Indexing continues in `after()` once the response is sent, so the route needs
+// headroom well past the sub-second reply.
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
+  const limited = await checkLimit(request, "map");
+  if (limited) return limited;
+
   let body: { url?: string };
   try {
     body = await request.json();
@@ -17,7 +26,7 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const job = createJob(url);
-  void runIndex(job.id, url);
+  const job = await createJob(url);
+  after(() => runIndex(job.id, url));
   return NextResponse.json({ id: job.id });
 }

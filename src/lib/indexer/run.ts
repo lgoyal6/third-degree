@@ -1,45 +1,48 @@
 import { failJob, updateJob } from "../jobs";
 import { fetchRepoMeta, parseRepoUrl } from "../github";
-import { cloneRepo } from "./clone";
+import { fetchRepo } from "./fetch";
 import { walkRepo } from "./walk";
 import { detectStack } from "./deps";
 import { categorize, extractEntryPoints, extractRoutes } from "./structure";
+import { buildDepGraph } from "./graph";
 import { extractDataModel } from "./datamodel";
 import { summarize } from "./summary";
 import { getJob } from "../jobs";
 
 // Runs the full M0 pipeline, updating the job after each stage so the client
-// can render progressively. Called fire-and-forget from the API route.
+// can render progressively. Scheduled with `after()` from the API route so it
+// keeps running once the response has been sent.
 export async function runIndex(jobId: string, url: string): Promise<void> {
   try {
     const ref = parseRepoUrl(url);
     if (!ref) throw new Error("That doesn't look like a GitHub repo. Try owner/repo or a full URL.");
 
-    updateJob(jobId, "meta");
+    await updateJob(jobId, "meta");
     const meta = await fetchRepoMeta(ref);
-    updateJob(jobId, "clone", { meta });
+    await updateJob(jobId, "clone", { meta });
 
-    const root = await cloneRepo(ref);
+    const root = await fetchRepo(ref);
 
-    updateJob(jobId, "files");
+    await updateJob(jobId, "files");
     const { files, languages } = walkRepo(root);
     const totalLoc = files.reduce((s, f) => s + f.loc, 0);
-    updateJob(jobId, "stack", { languages, totalFiles: files.length, totalLoc });
+    await updateJob(jobId, "stack", { languages, totalFiles: files.length, totalLoc });
 
     const stack = detectStack(root, files);
-    updateJob(jobId, "structure", { stack });
+    await updateJob(jobId, "structure", { stack });
 
     const routes = extractRoutes(root, files, stack.frameworks);
     const entryPoints = extractEntryPoints(root, files);
     const categories = categorize(files);
-    updateJob(jobId, "schema", { routes, entryPoints, categories });
+    const graph = buildDepGraph(root, files);
+    await updateJob(jobId, "schema", { routes, entryPoints, categories, graph });
 
     const models = extractDataModel(root, files);
-    updateJob(jobId, "summary", { models });
+    await updateJob(jobId, "summary", { models });
 
-    const summary = await summarize(getJob(jobId)?.map ?? {});
-    updateJob(jobId, "done", { summary });
+    const summary = await summarize((await getJob(jobId))?.map ?? {});
+    await updateJob(jobId, "done", { summary });
   } catch (err) {
-    failJob(jobId, err instanceof Error ? err.message : "Indexing failed.");
+    await failJob(jobId, err instanceof Error ? err.message : "Indexing failed.");
   }
 }
