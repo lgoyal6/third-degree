@@ -181,8 +181,12 @@ function templateFeedback(c: Coverage): string {
   return text;
 }
 
-function phantomLines(c: Coverage): string {
+// The callout is a guarantee, not a duplicate: when the prose already named an
+// invented file, saying it twice reads as a stutter.
+function phantomLines(c: Coverage, prose: string | null): string {
+  const said = (prose ?? "").toLowerCase();
   return c.phantoms
+    .filter((p) => !said.includes(p.toLowerCase()))
     .slice(0, 3)
     .map((p) => ` You referenced ${p}. That file does not exist in this repo.`)
     .join("");
@@ -250,5 +254,5 @@ export async function gradeOverviewAnswer(
   const coverage = coverageOf(question, answer);
   const score = scoreOf(coverage);
   const prose = await proseFeedback(coverage, answer);
-  return { score, feedback: (prose ?? templateFeedback(coverage)) + phantomLines(coverage) };
+  return { score, feedback: (prose ?? templateFeedback(coverage)) + phantomLines(coverage, prose) };
 }
