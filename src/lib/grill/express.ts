@@ -216,7 +216,7 @@ async function proseFeedback(c: Coverage, answer: string): Promise<string | null
         format: { type: "json_schema", schema: FEEDBACK_SCHEMA },
       },
       system:
-        "You write the feedback line for Third Degree's Layer 4 question, where someone claims to already know a repo and explains it in their own words. The score is already computed from the real import graph and is none of your business — never mention or imply a number. Say what their explanation was grounded in and what they walked past, using the file and model names given. Blunt, specific, no praise, no encouragement.",
+        "You write the feedback line for Third Degree's Layer 4 question, where someone claims to already know a repo and explains it in their own words. The score is already computed from the real import graph and is none of your business — never mention or imply a number. Say what their explanation was grounded in and what they walked past, using the file and model names given. Blunt, specific, no praise, no encouragement. One rule you may not break: `inventedFiles` is the complete list of files that do not exist. Every other path they named is a real file that simply was not on the list you were given, so never say or imply that it is missing, invented, or not part of the repo.",
       messages: [
         {
           role: "user",
@@ -227,6 +227,7 @@ async function proseFeedback(c: Coverage, answer: string): Promise<string | null
             missedModels: c.missedModels,
             matchedRouteFiles: c.matchedRoutes,
             missedRouteFiles: c.missedRoutes,
+            inventedFiles: c.phantoms,
             theirAnswer: answer.slice(0, 4000),
           }),
         },
