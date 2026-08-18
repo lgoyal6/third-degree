@@ -9,6 +9,7 @@ const LIMITS = {
   map: { tokens: 5, window: "1 h" },
   grill: { tokens: 5, window: "1 h" },
   answer: { tokens: 60, window: "1 h" },
+  lessons: { tokens: 10, window: "1 h" },
 } as const;
 
 export type LimitName = keyof typeof LIMITS;

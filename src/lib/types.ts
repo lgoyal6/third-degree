@@ -92,6 +92,14 @@ export interface DepEdge {
   t: string; // imported
 }
 
+export interface LessonCard {
+  using: string; // the choice as shipped: "Drizzle ORM", "App Router"
+  insteadOf?: string; // omitted on the deterministic fallback card
+  whyItFits: string;
+  whatItCosts?: string; // omitted on the deterministic fallback card
+  evidence: string[]; // repo-relative paths that exist in the map
+}
+
 export interface CodeMap {
   meta?: RepoMeta;
   languages?: LanguageStat[];
@@ -104,6 +112,7 @@ export interface CodeMap {
   categories?: CategoryNode[];
   graph?: { nodes: DepNode[]; edges: DepEdge[] };
   summary?: MapSummary;
+  lessons?: LessonCard[];
 }
 
 export interface MapJob {

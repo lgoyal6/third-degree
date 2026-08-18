@@ -22,25 +22,7 @@ export default function MapView({ jobId }: { jobId: string }) {
   const router = useRouter();
   const [job, setJob] = useState<MapJob | null>(null);
   const [lost, setLost] = useState(false);
-  const [grilling, setGrilling] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const startGrill = useCallback(async () => {
-    if (grilling) return;
-    setGrilling(true);
-    try {
-      const res = await fetch("/api/grill", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      router.push(`/grill/${data.id}`);
-    } catch {
-      setGrilling(false);
-    }
-  }, [grilling, jobId, router]);
 
   const stop = useCallback(() => {
     if (timer.current) clearInterval(timer.current);
@@ -335,16 +317,18 @@ export default function MapView({ jobId }: { jobId: string }) {
         <section className="fade-up lamp-glow rounded-xl border border-lamp/30 bg-surface p-8 text-center" aria-label="Start the grilling">
           <p className="font-display text-2xl font-semibold">You&apos;ve seen the map.</p>
           <p className="mt-2 text-ink-muted">
-            Now sit down. Questions climb from fundamentals to the seams — the way an interviewer would.
+            First the stack choices it made, then the questions — climbing from fundamentals to the seams, the
+            way an interviewer would.
           </p>
-          <button
-            onClick={startGrill}
-            disabled={grilling}
-            className="mt-5 cursor-pointer rounded-lg bg-lamp px-7 py-3 font-medium text-bg hover:bg-lamp-bright disabled:opacity-60"
+          <Link
+            href={`/map/${jobId}/lessons`}
+            className="mt-5 inline-block rounded-lg bg-lamp px-7 py-3 font-medium text-bg hover:bg-lamp-bright"
           >
-            {grilling ? "Preparing the room…" : "Grill me on it →"}
-          </button>
-          <p className="mt-3 font-mono text-xs text-ink-muted">~10 questions · typed answers · scored · shareable verdict</p>
+            Brief me, then grill me →
+          </Link>
+          <p className="mt-3 font-mono text-xs text-ink-muted">
+            the choices you made · then ~10 questions · scored · shareable verdict
+          </p>
         </section>
       )}
 

@@ -26,7 +26,8 @@ const SUMMARY_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-function buildFacts(map: CodeMap): string {
+// Shared with the lesson deck, which grounds its cards in the same facts.
+export function buildFacts(map: CodeMap): string {
   return JSON.stringify(
     {
       repo: map.meta ? `${map.meta.owner}/${map.meta.name}` : undefined,
