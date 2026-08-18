@@ -4,7 +4,8 @@ export type QuestionKind =
   | "route-handler" // Layer 2 — which file handles this request
   | "route-models" // Layer 2 — which models does this route touch
   | "imports" // Layer 3 — blast radius via import graph
-  | "field-refs"; // Layer 3 — blast radius of a schema field rename
+  | "field-refs" // Layer 3 — blast radius of a schema field rename
+  | "overview"; // Layer 4 — describe the whole system, scored on groundedness
 
 export interface ContextCode {
   file: string;
@@ -15,6 +16,8 @@ export interface ContextCode {
 export interface GroundTruth {
   files?: string[]; // graded by set overlap
   names?: string[]; // graded by name-set overlap
+  hubs?: { file: string; weight: number }[]; // load-bearing files, weighted by import degree
+  filePaths?: string[]; // every path the walk found, so invented files can be caught
   keyPoints?: string[]; // LLM-graded
   keySymbols?: string[]; // LLM-graded groundedness anchors
   reveal: string; // human-readable correct answer shown after grading
@@ -22,7 +25,7 @@ export interface GroundTruth {
 
 export interface GrillQuestion {
   id: string;
-  layer: 1 | 2 | 3;
+  layer: 1 | 2 | 3 | 4;
   kind: QuestionKind;
   prompt: string;
   contextCode?: ContextCode;

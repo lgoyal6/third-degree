@@ -9,6 +9,8 @@ import { extractDataModel } from "./datamodel";
 import { summarize } from "./summary";
 import { getJob } from "../jobs";
 
+const FILE_PATH_CAP = 1500;
+
 // Runs the full M0 pipeline, updating the job after each stage so the client
 // can render progressively. Scheduled with `after()` from the API route so it
 // keeps running once the response has been sent.
@@ -26,7 +28,14 @@ export async function runIndex(jobId: string, url: string): Promise<void> {
     await updateJob(jobId, "files");
     const { files, languages } = walkRepo(root);
     const totalLoc = files.reduce((s, f) => s + f.loc, 0);
-    await updateJob(jobId, "stack", { languages, totalFiles: files.length, totalLoc });
+    await updateJob(jobId, "stack", {
+      languages,
+      totalFiles: files.length,
+      totalLoc,
+      // Kept for Layer 4 phantom detection, which has to tell "this file is not
+      // in the graph" from "this file does not exist". Capped so the job stays small.
+      filePaths: files.map((f) => f.path).slice(0, FILE_PATH_CAP),
+    });
 
     const stack = detectStack(root, files);
     await updateJob(jobId, "structure", { stack });

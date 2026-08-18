@@ -22,7 +22,29 @@ export default function MapView({ jobId }: { jobId: string }) {
   const router = useRouter();
   const [job, setJob] = useState<MapJob | null>(null);
   const [lost, setLost] = useState(false);
+  const [express, setExpress] = useState(false);
+  const [expressError, setExpressError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Layer 4: skip the ladder and defend the whole system in one answer.
+  const startExpress = useCallback(async () => {
+    if (express) return;
+    setExpress(true);
+    setExpressError(null);
+    try {
+      const res = await fetch("/api/express", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Couldn't set that up.");
+      router.push(`/grill/${data.id}`);
+    } catch (err) {
+      setExpressError(err instanceof Error ? err.message : "Couldn't set that up.");
+      setExpress(false);
+    }
+  }, [express, jobId, router]);
 
   const stop = useCallback(() => {
     if (timer.current) clearInterval(timer.current);
@@ -329,6 +351,16 @@ export default function MapView({ jobId }: { jobId: string }) {
           <p className="mt-3 font-mono text-xs text-ink-muted">
             the choices you made · then ~10 questions · scored · shareable verdict
           </p>
+          <div className="mt-6 border-t border-line/60 pt-5">
+            <button
+              onClick={startExpress}
+              disabled={express}
+              className="cursor-pointer font-mono text-xs text-ink-muted hover:text-lamp disabled:opacity-60"
+            >
+              {express ? "clearing the room…" : "or: I already know this repo → one question, one shot"}
+            </button>
+            {expressError && <p className="mt-2 font-mono text-xs text-err">{expressError}</p>}
+          </div>
         </section>
       )}
 

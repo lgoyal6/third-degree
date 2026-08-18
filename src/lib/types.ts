@@ -104,6 +104,7 @@ export interface CodeMap {
   meta?: RepoMeta;
   languages?: LanguageStat[];
   totalFiles?: number;
+  filePaths?: string[]; // every walked path, for Layer 4 phantom detection
   totalLoc?: number;
   stack?: StackInfo;
   entryPoints?: string[];

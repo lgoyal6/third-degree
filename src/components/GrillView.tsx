@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { GrillView as ViewState } from "@/lib/grill/view";
 import { VERDICT_COPY, type Verdict } from "@/lib/grill/types";
 
-const LAYER_LABEL: Record<number, string> = { 1: "fundamentals", 2: "modules", 3: "seams" };
+const LAYER_LABEL: Record<number, string> = { 1: "fundamentals", 2: "modules", 3: "seams", 4: "the whole system" };
 const POLL_MS = 900;
 
 interface LastResult {
@@ -201,7 +201,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
               }
             }}
             placeholder="Type your answer. Specifics beat generalities — name files, functions, fields."
-            rows={7}
+            rows={q.kind === "overview" ? 12 : 7}
             className="w-full flex-none resize-none rounded-xl border border-line bg-surface p-4 font-mono text-sm placeholder:text-ink-muted/50"
           />
           <div className="flex items-center justify-between">

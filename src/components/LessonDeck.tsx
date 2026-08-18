@@ -18,6 +18,7 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
   const [failure, setFailure] = useState<"expired" | "unfinished" | "failed" | null>(null);
   const [index, setIndex] = useState(0);
   const [grilling, setGrilling] = useState(false);
+  const [expressError, setExpressError] = useState<string | null>(null);
 
   const startGrill = useCallback(async () => {
     if (grilling) return;
@@ -32,6 +33,26 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
       if (!res.ok) throw new Error(data.error);
       router.push(`/grill/${data.id}`);
     } catch {
+      setGrilling(false);
+    }
+  }, [grilling, jobId, router]);
+
+  // Layer 4: skip the ladder and defend the whole system in one answer.
+  const startExpress = useCallback(async () => {
+    if (grilling) return;
+    setGrilling(true);
+    setExpressError(null);
+    try {
+      const res = await fetch("/api/express", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Couldn't set that up.");
+      router.push(`/grill/${data.id}`);
+    } catch (err) {
+      setExpressError(err instanceof Error ? err.message : "Couldn't set that up.");
       setGrilling(false);
     }
   }, [grilling, jobId, router]);
@@ -244,7 +265,15 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
         </div>
       </div>
 
-      <footer className="pb-10 pt-2 text-center">
+      <footer className="flex flex-col items-center gap-2 pb-10 pt-2">
+        <button
+          onClick={startExpress}
+          disabled={grilling}
+          className="cursor-pointer font-mono text-xs text-ink-muted hover:text-lamp disabled:opacity-60"
+        >
+          I already know this repo → one question, one shot
+        </button>
+        {expressError && <p className="font-mono text-xs text-err">{expressError}</p>}
         <Link href={`/map/${jobId}`} className="font-mono text-xs text-ink-muted hover:text-lamp">
           back to the map
         </Link>

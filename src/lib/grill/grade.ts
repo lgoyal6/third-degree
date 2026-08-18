@@ -1,4 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { gradeOverviewAnswer } from "./express";
+import { extractFileTokens, fileMatched } from "./match";
 import type { GrillQuestion } from "./types";
 
 export interface GradeResult {
@@ -7,28 +9,6 @@ export interface GradeResult {
 }
 
 // ---------- Tier 1: deterministic set grading ----------
-
-function fileMatched(answer: string, file: string): boolean {
-  const a = answer.toLowerCase();
-  const f = file.toLowerCase();
-  if (a.includes(f)) return true;
-  const parts = f.split("/");
-  const base = parts[parts.length - 1];
-  const baseNoExt = base.replace(/\.[^.]+$/, "");
-  if (parts.length >= 2 && a.includes(`${parts[parts.length - 2]}/${base}`)) return true;
-  // Framework-convention basenames (route.ts, page.tsx…) repeat everywhere —
-  // they only count when dir-qualified, which the checks above cover.
-  if (["page", "route", "index", "layout", "middleware"].includes(baseNoExt)) return false;
-  if (a.includes(base)) return true;
-  if (baseNoExt.length >= 4 && a.includes(baseNoExt)) return true;
-  return false;
-}
-
-function extractFileTokens(answer: string): string[] {
-  return (
-    answer.match(/[\w@./-]*[\w-]+\.(tsx?|jsx?|mjs|cjs|prisma|sql|css)\b|[\w@.-]+\/[\w@./-]+/g) ?? []
-  );
-}
 
 export function gradeFileList(answer: string, gtFiles: string[]): GradeResult {
   const hits = gtFiles.filter((f) => fileMatched(answer, f));
@@ -134,6 +114,9 @@ export async function gradeAnswer(
   allModelNames: string[],
 ): Promise<GradeResult> {
   const gt = question.groundTruth;
+  // Layer 4 carries files, names and hubs at once and is scored without a
+  // model in the loop, so it has to be dispatched before the set graders.
+  if (question.kind === "overview") return gradeOverviewAnswer(question, answer);
   if (question.kind === "route-handler" && gt.files?.length === 1) {
     return gradeSingleFile(answer, gt.files[0]);
   }
