@@ -54,7 +54,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         </div>
         <div style={{ display: "flex", marginTop: 10, color: "#A79A85" }}>{copy}</div>
         <div style={{ display: "flex", marginTop: 34, color: "#FFB224", fontSize: 24 }}>
-          Get grilled on your own repo → thirddegree.dev
+          Get grilled on your own repo → third-degree.vercel.app
         </div>
       </div>
     ),

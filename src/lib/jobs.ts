@@ -2,11 +2,12 @@ import { randomUUID } from "node:crypto";
 import { redis } from "./redis";
 import type { CodeMap, MapJob, Stage } from "./types";
 
-// Map jobs are throwaway progress state: the client polls until "done", then
-// works from the rendered map. Serverless instances don't share memory, so this
-// lives in Redis (BUILD_PLAN §9) — the poll may land on a different instance
-// than the one indexing.
-const JOB_TTL_SECONDS = 30 * 60;
+// Serverless instances don't share memory, so jobs live in Redis (BUILD_PLAN §9):
+// a poll may land on a different instance than the one indexing.
+// The TTL is a week rather than minutes because a map URL is a resumable
+// artifact, not just progress state. Skipping the lesson deck and coming back
+// later has to still work.
+const JOB_TTL_SECONDS = 7 * 24 * 60 * 60;
 
 const key = (id: string) => `job:${id}`;
 

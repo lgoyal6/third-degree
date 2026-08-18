@@ -29,10 +29,19 @@ export async function fetchRepo(ref: RepoRef): Promise<string> {
     headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   }
 
-  const res = await fetch(
-    `https://api.github.com/repos/${ref.owner}/${ref.repo}/tarball`,
-    { headers, signal: AbortSignal.timeout(120_000) },
-  );
+  let res: Response;
+  try {
+    res = await fetch(
+      `https://api.github.com/repos/${ref.owner}/${ref.repo}/tarball`,
+      { headers, signal: AbortSignal.timeout(120_000) },
+    );
+  } catch (err) {
+    throw new Error(
+      err instanceof Error && err.name === "TimeoutError"
+        ? "Downloading this repo took too long. It may be too large or GitHub may be slow."
+        : "Couldn't download the repo from GitHub. Try again in a moment.",
+    );
+  }
   if (!res.ok || !res.body) {
     throw new Error(`Couldn't download the repo from GitHub (${res.status}).`);
   }

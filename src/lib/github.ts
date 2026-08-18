@@ -29,10 +29,21 @@ export async function fetchRepoMeta(ref: RepoRef): Promise<RepoMeta> {
   if (process.env.GITHUB_TOKEN) {
     headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   }
-  const res = await fetch(`https://api.github.com/repos/${ref.owner}/${ref.repo}`, {
-    headers,
-    signal: AbortSignal.timeout(10_000),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`https://api.github.com/repos/${ref.owner}/${ref.repo}`, {
+      headers,
+      signal: AbortSignal.timeout(30_000),
+    });
+  } catch (err) {
+    // Without this, an aborted fetch surfaces the raw "The operation was
+    // aborted due to timeout" to the user.
+    throw new Error(
+      err instanceof Error && err.name === "TimeoutError"
+        ? "GitHub took too long to respond. Try again in a moment."
+        : "Couldn't reach GitHub. Check the URL and try again.",
+    );
+  }
   if (res.status === 404) throw new Error("Repo not found — is it public?");
   if (res.status === 403 || res.status === 429) {
     throw new Error("GitHub rate limit hit — try again in a minute (or set GITHUB_TOKEN).");
