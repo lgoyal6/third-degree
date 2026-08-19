@@ -35,9 +35,16 @@ export async function GET(request: Request) {
       }),
       signal: AbortSignal.timeout(15_000),
     });
-    const data = (await res.json()) as { access_token?: string };
+    const data = (await res.json()) as { access_token?: string; error?: string; error_description?: string };
+    // GitHub answers 200 with an error body, and the distinction matters when
+    // debugging a setup: incorrect_client_credentials means the id/secret pair
+    // is wrong, redirect_uri_mismatch means the app's callback does not match.
+    if (data.error) {
+      console.error("[gh-oauth] exchange rejected:", data.error, data.error_description ?? "");
+    }
     token = data.access_token;
-  } catch {
+  } catch (err) {
+    console.error("[gh-oauth] exchange failed:", err instanceof Error ? err.message : err);
     return home(request, "failed");
   }
   if (!token) return home(request, "failed");
