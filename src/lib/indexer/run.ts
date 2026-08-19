@@ -14,16 +14,16 @@ const FILE_PATH_CAP = 1500;
 // Runs the full M0 pipeline, updating the job after each stage so the client
 // can render progressively. Scheduled with `after()` from the API route so it
 // keeps running once the response has been sent.
-export async function runIndex(jobId: string, url: string): Promise<void> {
+export async function runIndex(jobId: string, url: string, userToken?: string): Promise<void> {
   try {
     const ref = parseRepoUrl(url);
     if (!ref) throw new Error("That doesn't look like a GitHub repo. Try owner/repo or a full URL.");
 
     await updateJob(jobId, "meta");
-    const meta = await fetchRepoMeta(ref);
+    const meta = await fetchRepoMeta(ref, userToken);
     await updateJob(jobId, "clone", { meta });
 
-    const root = await fetchRepo(ref);
+    const root = await fetchRepo(ref, userToken);
 
     await updateJob(jobId, "files");
     const { files, languages } = walkRepo(root);

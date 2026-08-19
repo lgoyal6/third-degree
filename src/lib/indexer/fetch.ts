@@ -16,7 +16,7 @@ export function repoDir(ref: RepoRef): string {
   return path.join(REPOS_DIR, `${ref.owner}__${ref.repo}`);
 }
 
-export async function fetchRepo(ref: RepoRef): Promise<string> {
+export async function fetchRepo(ref: RepoRef, userToken?: string): Promise<string> {
   const dest = repoDir(ref);
   // Same instance already has it (map → grill on a warm function): reuse.
   if (existsSync(dest)) return dest;
@@ -25,9 +25,8 @@ export async function fetchRepo(ref: RepoRef): Promise<string> {
     Accept: "application/vnd.github+json",
     "User-Agent": "third-degree-indexer",
   };
-  if (process.env.GITHUB_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-  }
+  const token = userToken ?? process.env.GITHUB_TOKEN;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   let res: Response;
   try {

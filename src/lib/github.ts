@@ -21,14 +21,14 @@ export function parseRepoUrl(input: string): RepoRef | null {
   return null;
 }
 
-export async function fetchRepoMeta(ref: RepoRef): Promise<RepoMeta> {
+export async function fetchRepoMeta(ref: RepoRef, userToken?: string): Promise<RepoMeta> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "User-Agent": "third-degree-indexer",
   };
-  if (process.env.GITHUB_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-  }
+  // The connected user's token first: it is what makes private repos visible.
+  const token = userToken ?? process.env.GITHUB_TOKEN;
+  if (token) headers.Authorization = `Bearer ${token}`;
   let res: Response;
   try {
     res = await fetch(`https://api.github.com/repos/${ref.owner}/${ref.repo}`, {
@@ -44,7 +44,13 @@ export async function fetchRepoMeta(ref: RepoRef): Promise<RepoMeta> {
         : "Couldn't reach GitHub. Check the URL and try again.",
     );
   }
-  if (res.status === 404) throw new Error("Repo not found — is it public?");
+  if (res.status === 404) {
+    throw new Error(
+      userToken
+        ? "Repo not found — check the name, and that your GitHub connection can see it."
+        : "Repo not found — is it public? Connect GitHub to reach private repos.",
+    );
+  }
   if (res.status === 403 || res.status === 429) {
     throw new Error("GitHub rate limit hit — try again in a minute (or set GITHUB_TOKEN).");
   }

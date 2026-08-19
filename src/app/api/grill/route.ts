@@ -6,6 +6,7 @@ import { walkRepo } from "@/lib/indexer/walk";
 import { generateQuestions } from "@/lib/grill/generate";
 import { createSession, getSession, saveSession } from "@/lib/grill/store";
 import { checkLimit } from "@/lib/ratelimit";
+import { sessionToken } from "@/lib/auth/github";
 
 // Question generation continues in `after()` once the response is sent.
 export const maxDuration = 300;
@@ -14,13 +15,14 @@ async function prepare(
   sessionId: string,
   ref: { owner: string; repo: string },
   mapJobId: string,
+  userToken?: string,
 ) {
   const [session, job] = await Promise.all([getSession(sessionId), getJob(mapJobId)]);
   if (!session || !job) return;
   try {
     // Warm instances still have the extracted tarball from the map run;
     // otherwise this re-downloads it.
-    const root = await fetchRepo(ref);
+    const root = await fetchRepo(ref, userToken);
     const { files } = walkRepo(root);
     session.questions = await generateQuestions(root, job.map, files);
     session.status = "ready";
@@ -61,6 +63,7 @@ export async function POST(request: Request) {
     questions: [],
   });
 
-  after(() => prepare(session.id, { owner: meta.owner, repo: meta.name }, job.id));
+  const token = await sessionToken();
+  after(() => prepare(session.id, { owner: meta.owner, repo: meta.name }, job.id, token));
   return NextResponse.json({ id: session.id });
 }

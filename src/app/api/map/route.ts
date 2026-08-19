@@ -4,6 +4,7 @@ import { createJob } from "@/lib/jobs";
 import { parseRepoUrl } from "@/lib/github";
 import { runIndex } from "@/lib/indexer/run";
 import { checkLimit } from "@/lib/ratelimit";
+import { sessionToken } from "@/lib/auth/github";
 
 // Indexing continues in `after()` once the response is sent, so the route needs
 // headroom well past the sub-second reply.
@@ -26,7 +27,9 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  // Read the token here: after() runs once the request context is gone.
+  const token = await sessionToken();
   const job = await createJob(url);
-  after(() => runIndex(job.id, url));
+  after(() => runIndex(job.id, url, token));
   return NextResponse.json({ id: job.id });
 }
