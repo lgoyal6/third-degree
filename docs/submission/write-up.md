@@ -2,42 +2,36 @@
 
 **You built it. Now own it.** Live at [third-degree.vercel.app](https://third-degree.vercel.app).
 
-A generation of developers is shipping repos faster than they can understand them. The
-projects work, the commits are green, the portfolio looks real, and then an interviewer asks
-"walk me through what happens when two requests hit this endpoint at the same time" and the
-room goes quiet. Third Degree exists for that moment.
+I built Third Degree for one moment. You shipped a project, probably with a lot of AI help,
+and it works. Then an interviewer asks what happens when two requests hit your endpoint at once, and you go quiet.
 
-Paste any public GitHub repo. No signup. Thirteen seconds later your code is mapped: what the app is, how it is organized, an interactive graph of every file and
-import, your routes, your data model. Connect GitHub for private repos.
-Then cards teach the choices your repo made, Drizzle instead of Prisma and what it costs. Then you get grilled: ten typed questions climbing
-from the constructs your code leans on, to which file handles a request, to what breaks when
-you rename a field. You leave with a score, a doneness rating from raw to
-well-done, and a share card.
+You paste a GitHub repo. No signup. Thirteen seconds later I show you
+your own code: what the app does, how it is organized, a graph of every file and import,
+your routes, your data model. If the repo is private, you connect GitHub first. Then I teach
+you the choices your repo made, like Drizzle instead of Prisma and what they cost. Then I grill
+you: ten questions that climb from the language features your code leans on, to which file
+handles a request, to what breaks when you rename a field. You finish with a score, a
+rating from raw to well-done, and a card to share.
 
-Ground truth comes from the repo, never from the model.
-"Which files break if you rename `User.email`" is generated *and* graded from static analysis,
-so there is no answer key to hallucinate. The model phrases questions and writes prose; it
-never decides what is true. With no API key, every call falls back to deterministic output and
-the scores do not move.
+What matters most is where the answers come from. I never let the model decide what is
+true about your code. When I ask which files break if you rename `User.email`, I build the question from the
+repo and grade it the same way, so there is no answer key to invent. The model writes
+the wording, nothing else. Take the API key away and it still scores.
 
-The sharpest version is the express path. Claim you already know your repo and you get one
-question: explain what this system does and how the pieces connect, name the actual files and
-models. The score comes off the import graph, weighted by how many things import each file. Then the mechanic I care about most: every file you name that does not
-exist costs ten points, and the feedback names it. Someone who absorbed a codebase from an AI names
-the file where it conventionally lives, not where theirs is, so `services/authService.ts` is
-a tell. A real explanation of Vercel's AI chatbot scored 83. A
-fluent, generic one scored 14. One with three invented paths scored 0, and was told which
-three.
+The express path is the sharpest version of that. You tell me you already know your repo, so
+I ask one question: explain what this system does and how the pieces connect, and name the real files. I score it off the import graph, weighted by how many things import each file. Then the part I am proudest of. Every file you name that does not exist costs you
+ten points, and I tell you which one. If you learned a codebase from an AI, you reach for the
+file where it usually lives instead of where yours is, so `services/authService.ts` gives you
+away. I tried three answers on Vercel's AI chatbot. A real one scored 83. A fluent, vague one scored
+14. One with three made-up paths scored 0, and I named all three.
 
-Two surfaces, on purpose. The tool looks like the place the work happened: a flat editor,
-mono for anything that came out of your repo. The verdict is printed on paper with the rating
-stamped in red, because a shared score should look like a graded exam.
+I made the tool and the result look like different things. The tool looks like an editor,
+because that is where you wrote the code. The verdict is printed on paper with the rating
+stamped in red, because a score you send someone should feel like a graded exam.
 
-Live now: the map, the lesson deck, the express path, the ten-question grill, groundedness
-grading, share cards, private repos over GitHub OAuth, a browser-local streak, and per-IP
-rate limits.
+Live today: the map, the lesson deck, the express path, the grill, share cards, private repos through GitHub OAuth, a daily streak, and rate limits.
 
-Next, in order. The pseudocode-to-code bridge: write pseudocode and convert it line by line,
-or generate it from code you shipped. Sandboxed problems scoped to your own project, not
-two-sum but "add a security layer to this route". Then the identity layer that makes streaks
-and a curriculum durable. Nothing does the first one well, and it aims straight at the thesis: owning syntax you did not write.
+Next I want to build the pseudocode bridge. You write pseudocode and I turn it into real code
+line by line, or you point at code you shipped and I turn it back into pseudocode.
+After that, real problems inside your own project, like "add a security layer to this route"
+instead of two-sum. Nobody does the first one well, and it is the whole point: owning syntax you did not write.
