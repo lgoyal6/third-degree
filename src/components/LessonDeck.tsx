@@ -236,8 +236,9 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
         )}
 
         {card.evidence.length > 0 && (
-          <div className="mt-6 flex flex-wrap items-center gap-2">
-            <span className="font-mono text-xs text-ink-muted">in your code →</span>
+          <div className="mt-6">
+            <p className="font-mono text-xs text-lamp">in your code</p>
+            <div className="mt-2 flex flex-wrap gap-2">
             {card.evidence.map((path) => (
               <a
                 key={path}
@@ -249,12 +250,15 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
                 {path}
               </a>
             ))}
+            </div>
           </div>
         )}
         </div>
       </article>
 
-      <div className="flex items-center justify-between gap-4">
+      {/* Sticky, because on the last card the grill CTA is the entire point and it
+          sat below the fold on a short window. */}
+      <div className="sticky bottom-0 flex items-center justify-between gap-4 border-t border-line bg-bg/90 py-3 backdrop-blur">
         <button
           onClick={back}
           disabled={index === 0}
@@ -280,18 +284,20 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
         </div>
       </div>
 
-      <footer className="flex flex-col items-center gap-2 pb-10 pt-2">
-        <button
-          onClick={startExpress}
-          disabled={grilling}
-          className="cursor-pointer font-mono text-xs text-ink-muted hover:text-lamp disabled:opacity-60"
-        >
-          I already know this repo → one question, one shot
-        </button>
-        {expressError && <p className="font-mono text-xs text-err">{expressError}</p>}
-        <Link href={`/map/${jobId}`} className="font-mono text-xs text-ink-muted hover:text-lamp">
-          back to the map
-        </Link>
+      <footer className="pb-10">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+          <button
+            onClick={startExpress}
+            disabled={grilling}
+            className="cursor-pointer font-mono text-xs text-ink-muted hover:text-lamp disabled:opacity-60"
+          >
+            I already know this repo → one question, one shot
+          </button>
+          <Link href={`/map/${jobId}`} className="font-mono text-xs text-ink-muted hover:text-lamp">
+            back to the map
+          </Link>
+        </div>
+        {expressError && <p className="mt-2 font-mono text-xs text-err">{expressError}</p>}
       </footer>
     </Shell>
   );

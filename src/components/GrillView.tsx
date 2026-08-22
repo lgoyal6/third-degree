@@ -130,30 +130,60 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
 
   // Feedback interstitial after each answer
   if (last) {
+    const graded = state.answered[state.answered.length - 1];
+    const lastPrompt = graded?.prompt ?? "";
+    const lastAnswer = graded?.answer ?? "";
+    const lastLayer = graded?.layer ?? 1;
     return (
       <>
       <StatusLine repo={`${state.repo.owner}/${state.repo.name}`} branch={state.repo.defaultBranch}>
         <span className="text-ink-muted">graded</span>
         <StreakBadge />
       </StatusLine>
-      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-6 px-6 py-12">
-        <p className="font-mono text-xs text-ink-muted">
-          question {String(state.currentIndex).padStart(2, "0")} of{" "}
-          {String(state.total).padStart(2, "0")}
-        </p>
-        <div className="fade-up rounded-md border border-line bg-surface p-6">
-          <p className="font-display text-3xl font-bold">
-            {last.score === null ? (
-              <span className="text-ink-muted">ungraded</span>
-            ) : (
-              <span className={last.score >= 60 ? "text-ok" : last.score >= 30 ? "text-attention" : "text-err"}>
-                {last.score}
-                <span className="text-lg text-ink-muted">/100</span>
-              </span>
-            )}
+      <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-6 py-8">
+        <div>
+          <p className="font-mono text-xs text-ink-muted">
+            question {String(state.currentIndex).padStart(2, "0")} of{" "}
+            {String(state.total).padStart(2, "0")}
           </p>
-          <p className="mt-3">{last.feedback}</p>
-          <div className="mt-5 rounded bg-surface-2 p-4">
+          {/* Same ladder as the question screen: losing it mid-flow broke the
+              sense of where you are. */}
+          <div className="mt-2 flex gap-1" aria-hidden>
+            {Array.from({ length: state.total }, (_, i) => (
+              <div
+                key={i}
+                className={`h-0.5 flex-1 rounded-full ${i < state.currentIndex ? "bg-lamp" : "bg-line"}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="fade-up rounded-md border border-line bg-surface">
+          {/* You cannot judge a grade without seeing what was asked and what you
+              said, and without them the screen was a score floating in a void. */}
+          <div className="border-b border-line px-6 py-4">
+            <p className="text-sm leading-relaxed">{renderPrompt(lastPrompt)}</p>
+            <p className="mt-3 font-mono text-xs leading-relaxed text-ink-muted">
+              <span className="text-ink-muted/60">you said</span> {lastAnswer}
+            </p>
+          </div>
+
+          <div className="flex items-baseline gap-4 px-6 pt-5">
+            <p className="font-display text-5xl font-semibold leading-none">
+              {last.score === null ? (
+                <span className="text-2xl text-ink-muted">ungraded</span>
+              ) : (
+                <span className={last.score >= 60 ? "text-ok" : last.score >= 30 ? "text-attention" : "text-err"}>
+                  {last.score}
+                  <span className="text-xl text-ink-muted">/100</span>
+                </span>
+              )}
+            </p>
+            <p className="font-mono text-xs text-lamp">{LAYER_LABEL[lastLayer] ?? ""}</p>
+          </div>
+          <p className="px-6 pt-3 leading-relaxed">{last.feedback}</p>
+
+          <div className="mt-5 border-t border-line bg-surface-2 px-6 py-4">
             <p className="font-mono text-xs text-lamp">the answer</p>
             <pre className="mt-2 whitespace-pre-wrap font-mono text-xs leading-relaxed text-ink-muted">{last.reveal}</pre>
           </div>
@@ -179,7 +209,11 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
           {String(Math.floor(elapsed / 60)).padStart(2, "0")}:{String(elapsed % 60).padStart(2, "0")}
         </span>
       </StatusLine>
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-6">
+      <main
+        className={`mx-auto flex w-full flex-1 flex-col px-6 py-6 ${
+          q.contextCode ? "max-w-6xl" : "max-w-3xl"
+        }`}
+      >
       <div className="flex items-baseline justify-between font-mono text-xs text-ink-muted">
         <span>
           question {String(state.currentIndex + 1).padStart(2, "0")} of{" "}
@@ -197,7 +231,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
         ))}
       </div>
 
-      <div className={`mt-8 grid flex-1 gap-6 ${q.contextCode ? "lg:grid-cols-2" : ""}`}>
+      <div className={`mt-8 grid gap-6 ${q.contextCode ? "flex-1 lg:grid-cols-2" : ""}`}>
         {q.contextCode && (
           <div className="min-h-0 overflow-auto rounded-md border border-line bg-surface">
             <p className="sticky top-0 z-10 border-b border-line bg-surface px-4 py-2 font-mono text-xs text-lamp">
@@ -316,11 +350,11 @@ function ScoreScreen({ state }: { state: ViewState }) {
             {state.repo.owner}/{state.repo.name}
           </p>
         </div>
-        <div className="mt-8 flex flex-wrap items-end justify-between gap-6">
+        <div className="mt-8 flex flex-wrap items-end gap-x-10 gap-y-6">
           <div>
             <p className="font-paper flex items-end gap-2 font-bold leading-none">
-              <span className="text-7xl">{state.score}</span>
-              <span className="pb-1 text-2xl text-paper-muted">/100</span>
+              <span className="text-8xl">{state.score}</span>
+              <span className="pb-2 text-3xl text-paper-muted">/100</span>
             </p>
             <p className="mt-3 max-w-sm text-sm text-paper-muted">{VERDICT_COPY[verdict]}</p>
           </div>
@@ -377,7 +411,7 @@ function ScoreScreen({ state }: { state: ViewState }) {
         </ol>
       </section>
 
-      <footer className="pb-10 text-center">
+      <footer className="pb-10">
         <Link href="/" className="font-mono text-xs text-ink-muted hover:text-lamp">
           map another repo
         </Link>
