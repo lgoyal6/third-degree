@@ -7,6 +7,7 @@ import type { GrillView as ViewState } from "@/lib/grill/view";
 import { VERDICT_COPY, type Verdict } from "@/lib/grill/types";
 import StreakBadge from "@/components/StreakBadge";
 import StatusLine from "@/components/StatusLine";
+import HintLadder from "@/components/HintLadder";
 import { recordCompletion } from "@/lib/progress";
 
 const LAYER_LABEL: Record<number, string> = { 1: "fundamentals", 2: "modules", 3: "seams", 4: "the whole system" };
@@ -25,6 +26,8 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
   const [answer, setAnswer] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [last, setLast] = useState<LastResult | null>(null);
+  const [learning, setLearning] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const questionShownAt = useRef<number | null>(null);
   const answerRef = useRef<HTMLTextAreaElement>(null);
@@ -99,6 +102,8 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
 
   const next = useCallback(() => {
     setLast(null);
+    setLearning(false);
+    setShowAnswer(false);
     questionShownAt.current = Date.now();
     setElapsed(0);
     setTimeout(() => answerRef.current?.focus(), 0);
@@ -106,7 +111,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
 
   // Enter advances the feedback screen
   useEffect(() => {
-    if (!last || state?.finished) return;
+    if (!last || state?.finished || learning) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
@@ -115,7 +120,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [last, state?.finished, next]);
+  }, [last, state?.finished, learning, next]);
 
   if (lost) return <Message text="This grilling expired." cta="Map a repo" />;
   if (!state) return <Preparing label="loading" />;
@@ -134,6 +139,9 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
     const lastPrompt = graded?.prompt ?? "";
     const lastAnswer = graded?.answer ?? "";
     const lastLayer = graded?.layer ?? 1;
+    const gradedId = graded?.id ?? "";
+    // "Missed" is the on-ramp trigger (§4): below the passing band, or ungraded.
+    const missed = last.score === null || last.score < 60;
     return (
       <>
       <StatusLine repo={`${state.repo.owner}/${state.repo.name}`} branch={state.repo.defaultBranch}>
@@ -183,18 +191,46 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
           </div>
           <p className="px-6 pt-3 leading-relaxed">{last.feedback}</p>
 
-          <div className="mt-5 border-t border-line bg-surface-2 px-6 py-4">
-            <p className="font-mono text-xs text-lamp">the answer</p>
-            <pre className="mt-2 whitespace-pre-wrap font-mono text-xs leading-relaxed text-ink-muted">{last.reveal}</pre>
-          </div>
+          {(!missed || showAnswer) && (
+            <div className="mt-5 border-t border-line bg-surface-2 px-6 py-4">
+              <p className="font-mono text-xs text-lamp">the answer</p>
+              <pre className="mt-2 whitespace-pre-wrap font-mono text-xs leading-relaxed text-ink-muted">{last.reveal}</pre>
+            </div>
+          )}
         </div>
-        <button
-          onClick={next}
-          autoFocus
-          className="cursor-pointer self-end rounded bg-lamp px-6 py-3 font-medium text-bg hover:bg-lamp-bright"
-        >
-          {state.currentIndex >= state.total ? "See the verdict" : "Next question"} ⏎
-        </button>
+
+        {learning ? (
+          <HintLadder sessionId={sessionId} questionId={gradedId} onFinished={next} />
+        ) : missed && !showAnswer ? (
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="max-w-sm text-sm text-ink-muted">
+              You missed this one. Work it out instead of reading the answer and it stays with you.
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowAnswer(true)}
+                className="cursor-pointer font-mono text-xs text-ink-muted hover:text-lamp"
+              >
+                just show me
+              </button>
+              <button
+                onClick={() => setLearning(true)}
+                autoFocus
+                className="cursor-pointer rounded bg-lamp px-6 py-3 font-medium text-bg hover:bg-lamp-bright"
+              >
+                Work it out →
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={next}
+            autoFocus
+            className="cursor-pointer self-end rounded bg-lamp px-6 py-3 font-medium text-bg hover:bg-lamp-bright"
+          >
+            {state.currentIndex >= state.total ? "See the verdict" : "Next question"} ⏎
+          </button>
+        )}
       </main>
       </>
     );

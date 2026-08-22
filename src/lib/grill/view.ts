@@ -22,6 +22,7 @@ export interface GrillView {
     contextCode?: { file: string; code: string; startLine: number };
   } | null;
   answered: {
+    id: string;
     prompt: string;
     layer: number;
     answer: string;
@@ -60,6 +61,7 @@ export function publicView(session: GrillSession): GrillView {
     answered: session.attempts.map((a, i) => {
       const question = session.questions[i];
       return {
+        id: question?.id ?? "",
         prompt: question?.prompt ?? "",
         layer: question?.layer ?? 1,
         answer: a.answer,

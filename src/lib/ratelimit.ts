@@ -11,6 +11,7 @@ const LIMITS = {
   answer: { tokens: 60, window: "1 h" },
   lessons: { tokens: 10, window: "1 h" },
   express: { tokens: 20, window: "1 h" },
+  hint: { tokens: 80, window: "1 h" },
 } as const;
 
 export type LimitName = keyof typeof LIMITS;

@@ -39,6 +39,7 @@ export interface Attempt {
   score: number | null; // null = grading unavailable, excluded from total
   feedback: string;
   latencyMs: number;
+  hintsUsed?: number; // rungs of the §6 ladder taken after the score was locked
 }
 
 export type Verdict = "raw" | "rare" | "medium" | "well-done";
