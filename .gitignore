@@ -44,3 +44,7 @@ next-env.d.ts
 .repos/
 .data/
 !.env.example
+
+# demo recording: kept out of git, it is a build artifact
+docs/submission/*.mp4
+docs/submission/*.webm
