@@ -1,5 +1,29 @@
 # Complete list of tools used
 
+## Short version, for a form field
+
+**Build:** Claude Code (Opus) for planning, implementation, QA and design.
+**AI at runtime:** Anthropic API, `claude-opus-4-8`, structured outputs, five call sites (map
+summary, snippet questions, answer grading, express feedback, lesson deck), each with a
+deterministic fallback.
+**Stack:** Next.js 16.2.12, React 19.2.4, TypeScript 5.9.3, Tailwind CSS 4.3.3, Node 24.19.0.
+**Libraries:** `@anthropic-ai/sdk` 0.115.0, `@upstash/redis` 1.38.2, `@upstash/ratelimit`
+2.0.8, `tar` 7.5.22, `d3-force` 3.0.0. The import graph, extractors, question generators,
+graders and every component are hand written. No UI kit.
+**Infrastructure:** Vercel with Fluid Compute and git-push deploys, Vercel CLI 59.4.0, Upstash
+Redis via the Vercel Marketplace, GitHub, git 2.55.0.
+**APIs:** GitHub REST for repo metadata and source tarballs, GitHub OAuth for private repos.
+**Design:** `next/font` with IBM Plex Sans, IBM Plex Mono and Bricolage Grotesque, Next
+`ImageResponse` for the share card, design tokens in `globals.css`.
+**Linting and types:** eslint 9.39.5, eslint-config-next 16.2.12, `@types` for node, react,
+react-dom and d3-force.
+**Demo:** agent-browser 0.34.0 for browser QA and screen recording, ffmpeg 9.0.1 for the
+encode and the audio, Apple Voice Memos for the narration.
+
+---
+
+## Full version
+
 Everything that went into building, running, or shipping Third Degree. Versions are what
 is actually installed, not what the manifest asks for.
 
