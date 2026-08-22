@@ -12,6 +12,9 @@ export const contentType = "image/png";
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const session = await getSessionBySlug(slug);
+  if (session?.repo.private) {
+    return new Response("Not found", { status: 404 });
+  }
   const score = session?.score ?? 0;
   const verdict = (session?.verdict ?? "raw").toUpperCase();
   const repo = session ? `${session.repo.owner}/${session.repo.name}` : "a repo";

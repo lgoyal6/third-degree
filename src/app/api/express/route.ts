@@ -37,6 +37,7 @@ export async function POST(request: Request) {
       name: meta.name,
       defaultBranch: meta.defaultBranch,
       description: meta.description,
+      private: meta.private,
     },
     frameworks: job.map.stack?.frameworks ?? [],
     modelNames: (job.map.models ?? []).map((m) => m.name),

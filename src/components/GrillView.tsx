@@ -25,7 +25,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [last, setLast] = useState<LastResult | null>(null);
   const [elapsed, setElapsed] = useState(0);
-  const questionShownAt = useRef(Date.now());
+  const questionShownAt = useRef<number | null>(null);
   const answerRef = useRef<HTMLTextAreaElement>(null);
 
   // Poll while preparing; a single fetch otherwise.
@@ -51,8 +51,9 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
 
   // Visible timer (Grill is Defend-lite: no help, clock on)
   useEffect(() => {
+    questionShownAt.current = Date.now();
     const t = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - questionShownAt.current) / 1000));
+      setElapsed(Math.floor((Date.now() - (questionShownAt.current ?? Date.now())) / 1000));
     }, 1000);
     return () => clearInterval(t);
   }, []);
@@ -80,7 +81,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           answer,
-          latencyMs: Date.now() - questionShownAt.current,
+          latencyMs: Date.now() - (questionShownAt.current ?? Date.now()),
         }),
       });
       const data = await res.json();
@@ -286,24 +287,30 @@ function ScoreScreen({ state }: { state: ViewState }) {
         <p className="font-display mt-4 text-8xl font-bold text-lamp">{state.score}</p>
         <p className="font-display mt-2 text-2xl font-semibold uppercase tracking-widest">{verdict}</p>
         <p className="mt-2 text-ink-muted">{VERDICT_COPY[verdict]}</p>
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <button
-            onClick={async () => {
-              await navigator.clipboard.writeText(shareUrl);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 2000);
-            }}
-            className="cursor-pointer rounded-lg bg-lamp px-5 py-2.5 font-medium text-bg hover:bg-lamp-bright"
-          >
-            {copied ? "Copied" : "Copy share link"}
-          </button>
-          <Link
-            href={`/s/${state.slug}`}
-            className="rounded-lg border border-line px-5 py-2.5 font-medium hover:border-lamp"
-          >
-            View card
-          </Link>
-        </div>
+        {state.repo.private ? (
+          <p className="mt-6 font-mono text-xs text-ink-muted">
+            private repo · no share card, since the questions name your files
+          </p>
+        ) : (
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <button
+              onClick={async () => {
+                await navigator.clipboard.writeText(shareUrl);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="cursor-pointer rounded-lg bg-lamp px-5 py-2.5 font-medium text-bg hover:bg-lamp-bright"
+            >
+              {copied ? "Copied" : "Copy share link"}
+            </button>
+            <Link
+              href={`/s/${state.slug}`}
+              className="rounded-lg border border-line px-5 py-2.5 font-medium hover:border-lamp"
+            >
+              View card
+            </Link>
+          </div>
+        )}
       </section>
 
       <section aria-label="Review">

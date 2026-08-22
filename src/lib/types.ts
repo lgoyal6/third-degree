@@ -25,6 +25,7 @@ export const STAGE_ORDER: Stage[] = [
 export interface RepoMeta {
   owner: string;
   name: string;
+  private: boolean;
   description: string | null;
   defaultBranch: string;
   stars: number;

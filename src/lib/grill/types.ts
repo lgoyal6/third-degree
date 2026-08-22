@@ -53,6 +53,9 @@ export interface GrillSession {
     name: string;
     defaultBranch: string;
     description: string | null;
+    // Private repos never get a public verdict page: the questions carry real
+    // file paths, so a share link would leak the tree to anyone holding it.
+    private?: boolean;
   };
   frameworks: string[];
   modelNames: string[]; // all data-model names, for wrong-model penalties in grading

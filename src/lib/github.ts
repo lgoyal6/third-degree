@@ -62,6 +62,7 @@ export async function fetchRepoMeta(ref: RepoRef, userToken?: string): Promise<R
   return {
     owner: ref.owner,
     name: data.name,
+    private: Boolean(data.private),
     description: data.description ?? null,
     defaultBranch: data.default_branch ?? "main",
     stars: data.stargazers_count ?? 0,

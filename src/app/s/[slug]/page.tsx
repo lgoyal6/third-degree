@@ -11,7 +11,9 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const session = await getSessionBySlug(slug);
-  if (!session || session.finishedAt === undefined) return { title: "Third Degree" };
+  if (!session || session.finishedAt === undefined || session.repo.private) {
+    return { title: "Third Degree" };
+  }
   return {
     title: `${session.score}/100 on ${session.repo.owner}/${session.repo.name} — Third Degree`,
     description: `Verdict: ${session.verdict}. ${VERDICT_COPY[session.verdict ?? "raw"]} Think you'd do better on your own repo?`,
@@ -21,7 +23,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function SharePage({ params }: Props) {
   const { slug } = await params;
   const session = await getSessionBySlug(slug);
-  if (!session || session.finishedAt === undefined) notFound();
+  // A private repo's questions name real files, so there is no public page for
+  // one. The owner still sees the verdict on their own score screen.
+  if (!session || session.finishedAt === undefined || session.repo.private) notFound();
 
   const verdict = session.verdict ?? "raw";
   // The question that hurt the most — the hook for anyone who sees the card
