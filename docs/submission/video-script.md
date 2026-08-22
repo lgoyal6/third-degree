@@ -1,89 +1,105 @@
-# Demo narration, keyed to `demo.mp4` (1:48, 1280x720)
+# Narration script for `demo.mp4`
 
-Read at a normal pace. Each block is sized to its window at roughly 2.5 words a
-second, so there is slack rather than a rush. What is on screen is listed first,
-then the line to say.
+Video: `docs/submission/demo.mp4`, 1 minute 51 seconds, 1280x720, no audio.
+Total read: 247 words, an average of 2.2 words a second, so every block has slack.
+
+Record it in one continuous take and send me the MP3. I will lay it over the
+video. If your read runs longer than a window, tell me and I will stretch that
+hold in the picture rather than making you rush; the video is mostly static
+holds, so there is room.
 
 ---
 
-**0:00 - 0:18 | the landing page, held still for you**
+## Cue sheet
 
-*On screen: Third Degree, "You built it. Now own it.", one input.*
+**0:00 - 0:18** · landing page, held still for you
 
-> Your intro goes here. Who you are, and the one sentence version of the problem:
-> you shipped a repo with heavy AI help, and you cannot explain it yet.
+> I'm Laksh, and this is Third Degree. It exists for one moment: an interviewer
+> asks you to walk through code you shipped, and the room goes quiet. It takes a
+> repo you built and interrogates you until you can defend it.
 
-If you want a written version to read:
+**0:18 - 0:31** · `vercel/ai-chatbot` typed in, Map it clicked, the map painting
 
-> Hi, I'm Laksh. I built Third Degree for the moment before an interview when you
-> realize you cannot explain code you shipped. It takes a repo you built, teaches
-> you the choices it made, then interrogates you on it and scores how grounded
-> your answers actually are.
+> You paste any public repo. No signup. It walks every file and builds an import
+> graph of the whole thing. A hundred and seventy six files, mapped in thirteen
+> seconds.
 
-**0:18 - 0:33 | typing a repo, then indexing**
+**0:31 - 0:38** · the brief: what this app is, how it's organized
 
-*On screen: `vercel/ai-chatbot` typed in, Map it clicked, the map painting section by section.*
+> First it orients you: what the app is, how it is organized, where to start
+> reading.
 
-> Paste any public repo. No signup, no OAuth unless you want private repos. It
-> pulls the tarball, walks every file, and builds an import graph. Thirteen
-> seconds for a hundred and seventy six files.
+**0:38 - 0:44** · the graph, then the hover lighting one file's imports
 
-**0:33 - 0:40 | the brief**
+> Hover any file and its blast radius lights up. Fifty five things import this
+> one.
 
-*On screen: what this app is, how it's organized, start-here file.*
+**0:44 - 0:58** · lesson deck, card 1 then card 2
 
-> First it orients you. What the app is, how it is organized, and the one file to
-> re-read first. Every claim in there comes from the repo, not from a guess.
+> Then it teaches the choices the repo actually made. App Router with route
+> groups. Drizzle instead of Prisma, and what that costs you. Every card cites a
+> real file.
 
-**0:40 - 0:45 | the wiring**
-
-*On screen: the graph, then hover on `lib/utils.ts`, 55 edges light up, everything else dims.*
-
-> This is every file and every import. Hover one and you see its blast radius.
-> Fifty five things import this file, so changing its exports touches all of them.
-
-**0:45 - 0:58 | the lesson deck**
-
-*On screen: card 1 App Router with route groups, then card 2.*
-
-> Then it teaches the choices the repo made. App Router with route groups.
-> Drizzle instead of Prisma, and what that costs you. Every card links to the real
-> file, and any card that cannot cite a real path is dropped before you see it.
-
-**0:58 - 1:15 | the grill**
-
-*On screen: question 1 of 10, the `lib/ai/models.ts` snippet with real line numbers, an answer typed, then graded.*
+**0:58 - 1:16** · question 1 of 10, the real snippet with line numbers, then a 95
 
 > Now it grills you. Ten questions climbing from the language constructs your code
 > leans on, to which file handles a request, to what breaks when you rename a
-> schema field. Real snippet, real line numbers, clock running, no hints.
+> field. Real code, real line numbers, no hints.
 
-**1:15 - 1:37 | the express path, the part that matters**
+**1:16 - 1:37** · the express path: one open question, answered and graded
 
-*On screen: "I already know this repo", one open question, a strong answer typed, graded.*
+> Or you claim you already know it, and answer one question. The score comes off
+> the import graph, with no model deciding anything. And every file you name that
+> does not exist costs ten points. Someone who learned a codebase from an AI names
+> the file where it usually lives.
 
-> Or claim you already know it. One question, and the score comes straight off the
-> import graph with no model deciding anything. Here is the mechanic I care about
-> most. Every file you name that does not exist costs you ten points. Someone who
-> absorbed a codebase from an AI reaches for the file where it usually lives, not
-> where theirs is.
+**1:37 - 1:51** · 65 out of 100, MEDIUM stamped on paper, then the tape
 
-**1:37 - 1:48 | the verdict**
-
-*On screen: 65 out of 100, MEDIUM stamped in red on paper, then the tape with the feedback.*
-
-> Sixty five. And look at the last line: `utils/authHelper.ts` isn't a thing. I
-> planted one fake file in a good answer and it caught it by name. That is the
-> whole product. Third Degree, at third-degree.vercel.app.
+> Sixty five. Read the last line: utils authHelper dot ts is not a real file. I
+> planted one fake file in a strong answer and it caught it. That is Third Degree.
 
 ---
 
-## Notes for the take
+## Straight through, no cues
 
-- The video has no audio. Record narration over it, or read live while it plays.
-- It was captured at 10 frames a second and re-encoded to 30, so scrolls are
-  intentional jumps rather than pans. Nothing is dropped.
-- Everything shown is production. The map at 0:18 indexes live in the recording.
-- The two answers typed on camera are in `video-shot-list.md` if you want to
-  re-shoot any beat by hand.
-- Timings above are the real beats measured during capture, not estimates.
+Read this as one take. The line breaks are breathing points, not pauses to time.
+
+I'm Laksh, and this is Third Degree. It exists for one moment: an interviewer asks
+you to walk through code you shipped, and the room goes quiet. It takes a repo you
+built and interrogates you until you can defend it.
+
+You paste any public repo. No signup. It walks every file and builds an import
+graph of the whole thing. A hundred and seventy six files, mapped in thirteen
+seconds.
+
+First it orients you: what the app is, how it is organized, where to start reading.
+
+Hover any file and its blast radius lights up. Fifty five things import this one.
+
+Then it teaches the choices the repo actually made. App Router with route groups.
+Drizzle instead of Prisma, and what that costs you. Every card cites a real file.
+
+Now it grills you. Ten questions climbing from the language constructs your code
+leans on, to which file handles a request, to what breaks when you rename a field.
+Real code, real line numbers, no hints.
+
+Or you claim you already know it, and answer one question. The score comes off the
+import graph, with no model deciding anything. And every file you name that does
+not exist costs ten points. Someone who learned a codebase from an AI names the
+file where it usually lives.
+
+Sixty five. Read the last line: utils authHelper dot ts is not a real file. I
+planted one fake file in a strong answer and it caught it. That is Third Degree.
+
+---
+
+## Notes
+
+- Say file paths as words: "utils authHelper dot ts", "lib slash db slash schema
+  dot ts". Reading punctuation aloud sounds robotic.
+- The two numbers are real and worth landing on: thirteen seconds to map a hundred
+  and seventy six files, and fifty five imports on the file you hover.
+- Every frame is production, and the map at 0:18 indexes live in the take.
+- Timings are the beats measured during capture, not estimates. The scores on
+  screen, 95 on the snippet question and 65 on the express run, are what the
+  product actually returned.
