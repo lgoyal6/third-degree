@@ -175,10 +175,16 @@ export default function MapView({ jobId }: { jobId: string }) {
       {/* The blurb — orientation before anything else */}
       {map.summary ? (
         <section className="fade-up lamp-glow rounded-xl border border-lamp/30 bg-surface p-6" aria-label="Summary">
+          {/* Measure capped and the walkthrough set a step down: at full width and
+              full size these two paragraphs opened the map with a wall of prose.
+              Columns were worse, since the structure text is far the longer of
+              the two and sets the height of whatever row it lands in. */}
           <p className="font-mono text-xs text-lamp">what this app is</p>
-          <p className="mt-2 leading-relaxed">{map.summary.text}</p>
-          <p className="mt-4 font-mono text-xs text-lamp">how it&apos;s organized</p>
-          <p className="mt-2 leading-relaxed text-ink-muted">{map.summary.structure}</p>
+          <p className="mt-2 max-w-[66ch] leading-relaxed">{map.summary.text}</p>
+          <p className="mt-5 font-mono text-xs text-lamp">how it&apos;s organized</p>
+          <p className="mt-2 max-w-[74ch] text-sm leading-relaxed text-ink-muted">
+            {map.summary.structure}
+          </p>
           <div className="mt-5 flex flex-wrap items-center gap-3">
             <span className="font-mono text-xs text-ink-muted">start reading →</span>
             {ghBase ? (
@@ -299,14 +305,22 @@ export default function MapView({ jobId }: { jobId: string }) {
             <SectionTitle>
               Routes <span className="text-ink-muted">({map.routes.length})</span>
             </SectionTitle>
-            <div className="mt-3 max-h-80 overflow-y-auto rounded-xl border border-line bg-surface">
-              <table className="w-full text-left font-mono text-xs">
-                <tbody>
-                  {map.routes.map((r, i) => (
-                    <RouteRow key={`${r.method}-${r.path}-${i}`} route={r} ghBase={ghBase} />
-                  ))}
-                </tbody>
-              </table>
+            <div className="relative mt-3">
+              <div className="max-h-80 overflow-y-auto rounded-xl border border-line bg-surface">
+                <table className="w-full table-fixed text-left font-mono text-xs">
+                  <tbody>
+                    {map.routes.map((r, i) => (
+                      <RouteRow key={`${r.method}-${r.path}-${i}`} route={r} ghBase={ghBase} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {map.routes.length > 10 && (
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-10 rounded-b-xl bg-gradient-to-t from-surface to-transparent"
+                />
+              )}
             </div>
           </section>
         )
@@ -435,11 +449,11 @@ const METHOD_COLOR: Record<string, string> = {
 function RouteRow({ route, ghBase }: { route: RouteInfo; ghBase: string | null }) {
   return (
     <tr className="border-b border-line/50 last:border-0">
-      <td className={`w-20 px-4 py-2 ${METHOD_COLOR[route.method] ?? "text-ink-muted"}`}>
+      <td className={`w-16 pl-4 pr-2 py-2 ${METHOD_COLOR[route.method] ?? "text-ink-muted"}`}>
         {route.kind === "page" ? "PAGE" : route.kind === "middleware" ? "MW" : route.method}
       </td>
-      <td className="px-2 py-2">{route.path}</td>
-      <td className="px-4 py-2 text-right text-ink-muted">
+      <td className="w-[42%] truncate py-2 pr-6">{route.path}</td>
+      <td className="truncate px-4 py-2 text-right text-ink-muted">
         {ghBase ? (
           <a href={`${ghBase}/${route.file}`} target="_blank" rel="noreferrer" className="hover:text-lamp">
             {route.file}

@@ -13,14 +13,17 @@ import {
 } from "d3-force";
 import type { DepEdge, DepNode } from "@/lib/types";
 
-// Categorical palette validated with the dataviz six-check script against the
-// #14100B surface (worst adjacent CVD ΔE 9.7; all ≥3:1 contrast). The bright
-// UI amber (#FFB224) is reserved for accent/hover, not data marks.
+// Separation by lightness inside the lamp's own warm range, rather than by hue.
+// The previous blue/green/purple set had better hue distance but read as a
+// stock chart palette dropped into an amber room, which is the one thing §7
+// says this product must never look like. Category identity is carried in the
+// legend and tooltip as text, never by color alone. The bright UI amber
+// (#FFB224) stays reserved for hover.
 const CAT_COLOR: Record<DepNode["cat"], string> = {
-  Frontend: "#3D8BE0",
-  Backend: "#C27A00",
-  Data: "#18A170",
-  Infra: "#A671E3",
+  Frontend: "#EFE1C8",
+  Backend: "#E0921F",
+  Data: "#D2691E",
+  Infra: "#8A7A62",
 };
 
 const W = 860;
@@ -36,7 +39,8 @@ interface SimNode extends SimulationNodeDatum {
 interface Layout {
   nodes: (SimNode & { x: number; y: number; r: number })[];
   links: { s: string; t: string; x1: number; y1: number; x2: number; y2: number }[];
-  labeled: Set<string>;
+  labeled: Map<string, { x: number; y: number; anchor: "middle" | "start" | "end"; w: number }>;
+  view: { x: number; y: number; w: number; h: number };
 }
 
 function computeLayout(nodes: DepNode[], edges: DepEdge[]): Layout {
@@ -71,19 +75,75 @@ function computeLayout(nodes: DepNode[], edges: DepEdge[]): Layout {
     })
     .filter((l): l is NonNullable<typeof l> => l !== null);
 
-  // Selective direct labels: biggest hubs only, skipping any label that would
-  // collide with one already placed (dense centers stack otherwise).
-  const labeled = new Set<string>();
-  const taken: { x: number; y: number }[] = [];
-  for (const n of [...placed].sort((a, b) => b.deg - a.deg)) {
-    if (labeled.size >= 6) break;
-    const lx = n.x;
-    const ly = n.y - n.r - 5;
-    if (taken.some((t) => Math.abs(t.x - lx) < 110 && Math.abs(t.y - ly) < 18)) continue;
-    labeled.add(n.id);
-    taken.push({ x: lx, y: ly });
+  // The hubs are the point of this picture, so the top six by degree always get
+  // a name. Placement picks whichever side overlaps least rather than skipping,
+  // because an unlabeled hub is worse than a label that grazes a small node.
+  const labeled = new Map<string, { x: number; y: number; anchor: "middle" | "start" | "end"; w: number }>();
+  const taken: { x: number; y: number; w: number; h: number }[] = [];
+  const charW = 5.6;
+  for (const n of [...placed].sort((a, b) => b.deg - a.deg).slice(0, 6)) {
+    const w = shortName(n.id).length * charW;
+    const candidates: { x: number; y: number; anchor: "middle" | "start" | "end"; box: [number, number, number, number] }[] = [
+      { x: n.x, y: n.y - n.r - 8, anchor: "middle", box: [n.x - w / 2, n.y - n.r - 18, w, 12] },
+      { x: n.x, y: n.y + n.r + 15, anchor: "middle", box: [n.x - w / 2, n.y + n.r + 5, w, 12] },
+      { x: n.x + n.r + 7, y: n.y + 3.5, anchor: "start", box: [n.x + n.r + 7, n.y - 6, w, 12] },
+      { x: n.x - n.r - 7, y: n.y + 3.5, anchor: "end", box: [n.x - n.r - 7 - w, n.y - 6, w, 12] },
+      { x: n.x, y: n.y - n.r - 22, anchor: "middle", box: [n.x - w / 2, n.y - n.r - 32, w, 12] },
+      { x: n.x, y: n.y + n.r + 29, anchor: "middle", box: [n.x - w / 2, n.y + n.r + 19, w, 12] },
+    ];
+    const scored = candidates.map((c) => {
+      const [bx, by, bw, bh] = c.box;
+      const nodeHits = placed.filter(
+        (o) => o.id !== n.id && o.x + o.r > bx && o.x - o.r < bx + bw && o.y + o.r > by && o.y - o.r < by + bh,
+      ).length;
+      const labelHits = taken.filter(
+        (t) => bx < t.x + t.w && t.x < bx + bw && by < t.y + t.h && t.y < by + bh,
+      ).length;
+      return { c, score: nodeHits + labelHits * 4 };
+    });
+    scored.sort((a, b) => a.score - b.score);
+    const best = scored[0].c;
+    labeled.set(n.id, { x: best.x, y: best.y, anchor: best.anchor, w });
+    taken.push({ x: best.box[0], y: best.box[1], w: best.box[2], h: best.box[3] });
   }
-  return { nodes: placed, links, labeled };
+
+  // The simulation settles wherever it settles; framing it to a fixed 860x540
+  // left the blob swimming in dead space. Crop to what was actually drawn.
+  const pad = 30;
+  const xs = placed.map((n) => n.x);
+  const ys = placed.map((n) => n.y);
+  let vx = Math.min(...xs) - pad;
+  let vy = Math.min(...ys) - pad - 8;
+  let vw = Math.max(...xs) - Math.min(...xs) + pad * 2;
+  let vh = Math.max(...ys) - Math.min(...ys) + pad * 2 + 8;
+
+  // A thin repo settles into a tiny cluster, and cropping to it would scale five
+  // dots up to beach balls. Floor the frame, then hold the aspect in a band so
+  // the box never renders as a slot or a tower.
+  // A twelve-file repo does not deserve the same canvas as a two-hundred-file
+  // one: floored at the same height it renders five dots in a 550px void.
+  const sparse = placed.length <= 12;
+  const MIN_W = 460;
+  const MIN_H = sparse ? 200 : 300;
+  if (vw < MIN_W) {
+    vx -= (MIN_W - vw) / 2;
+    vw = MIN_W;
+  }
+  if (vh < MIN_H) {
+    vy -= (MIN_H - vh) / 2;
+    vh = MIN_H;
+  }
+  const aspect = vw / vh;
+  if (aspect < 1.2) {
+    const widened = vh * 1.2;
+    vx -= (widened - vw) / 2;
+    vw = widened;
+  } else if (aspect > (sparse ? 2.6 : 1.9)) {
+    const heightened = vw / (sparse ? 2.6 : 1.9);
+    vy -= (heightened - vh) / 2;
+    vh = heightened;
+  }
+  return { nodes: placed, links, labeled, view: { x: vx, y: vy, w: vw, h: vh } };
 }
 
 function radius(n: { loc: number; deg: number }): number {
@@ -137,12 +197,12 @@ export default function DepGraph({
               {cat} <span className="opacity-60">{counts[cat]}</span>
             </span>
           ))}
-        <span className="ml-auto opacity-60">size = lines · lines between files = imports</span>
+        <span className="ml-auto opacity-60">dot size = lines of code · link = an import</span>
       </div>
 
       <div className="relative mt-3 overflow-hidden rounded-xl border border-line bg-surface">
         <svg
-          viewBox={`0 0 ${W} ${H}`}
+          viewBox={`${layout.view.x} ${layout.view.y} ${layout.view.w} ${layout.view.h}`}
           className="block h-auto w-full"
           role="img"
           aria-label={`Dependency graph: ${nodes.length} files, ${edges.length} import relationships. The routes and structure sections list the same information as text.`}
@@ -190,31 +250,65 @@ export default function DepGraph({
                   strokeWidth={isHover ? 2 : 1.5}
                   pointerEvents="none"
                 />
-                {(layout.labeled.has(n.id) || isHover) && (
-                  <text
-                    x={n.x}
-                    y={n.y - n.r - 5}
-                    textAnchor="middle"
-                    fontSize={10}
-                    fontFamily="var(--font-plex-mono), monospace"
-                    fill={isHover ? "#F3EDE3" : "#A79A85"}
-                    pointerEvents="none"
-                  >
-                    {shortName(n.id)}
-                  </text>
-                )}
               </g>
             );
           })}
+          {/* Labels last: inside the node groups they were painted over by every
+              node drawn after them, which is why hub names came out clipped. */}
+          {layout.nodes
+            .filter((n) => layout.labeled.has(n.id) || hover === n.id)
+            .map((n) => {
+              const spot = layout.labeled.get(n.id) ?? {
+                x: n.x,
+                y: n.y - n.r - 8,
+                anchor: "middle" as const,
+                w: shortName(n.id).length * 5.6,
+              };
+              // A plate rather than a stroke halo: over a dense center, outlined
+              // text still reads as struck through by whatever it crosses.
+              const plateX =
+                spot.anchor === "middle" ? spot.x - spot.w / 2 : spot.anchor === "start" ? spot.x : spot.x - spot.w;
+              return (
+                <g
+                  key={`label-${n.id}`}
+                  opacity={neighbors && !neighbors.has(n.id) ? 0.2 : 1}
+                  pointerEvents="none"
+                >
+                  <rect
+                    x={plateX - 4}
+                    y={spot.y - 9}
+                    width={spot.w + 8}
+                    height={13}
+                    rx={3}
+                    fill="#14100B"
+                    fillOpacity={0.82}
+                    stroke={hover === n.id ? "#FFB224" : "#3B3226"}
+                    strokeWidth={0.6}
+                  />
+                  <text
+                    x={spot.x}
+                    y={spot.y}
+                    textAnchor={spot.anchor}
+                    fontSize={10}
+                    fontFamily="var(--font-plex-mono), monospace"
+                    fill={hover === n.id ? "#FFC95C" : "#C9BCA6"}
+                  >
+                    {shortName(n.id)}
+                  </text>
+                </g>
+              );
+            })}
         </svg>
 
         {hovered && (
           <div
             className="pointer-events-none absolute z-10 rounded-lg border border-line bg-surface-2 px-3 py-2 font-mono text-xs shadow-lg"
             style={{
-              left: `${(hovered.x / W) * 100}%`,
-              top: `${(hovered.y / H) * 100}%`,
-              transform: `translate(${hovered.x > W * 0.6 ? "-105%" : "12px"}, ${hovered.y > H * 0.7 ? "-110%" : "8px"})`,
+              left: `${((hovered.x - layout.view.x) / layout.view.w) * 100}%`,
+              top: `${((hovered.y - layout.view.y) / layout.view.h) * 100}%`,
+              transform: `translate(${hovered.x > layout.view.x + layout.view.w * 0.6 ? "-105%" : "12px"}, ${
+                hovered.y > layout.view.y + layout.view.h * 0.7 ? "-110%" : "8px"
+              })`,
             }}
           >
             <p className="text-ink">{hovered.id}</p>
