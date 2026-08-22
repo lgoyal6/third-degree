@@ -103,6 +103,7 @@ export interface LessonCard {
 
 export interface CodeMap {
   meta?: RepoMeta;
+  sha?: string; // the commit this map was built from (BUILD_PLAN §8)
   languages?: LanguageStat[];
   totalFiles?: number;
   filePaths?: string[]; // every walked path, for Layer 4 phantom detection

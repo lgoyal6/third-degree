@@ -23,12 +23,15 @@ export async function runIndex(jobId: string, url: string, userToken?: string): 
     const meta = await fetchRepoMeta(ref, userToken);
     await updateJob(jobId, "clone", { meta });
 
-    const root = await fetchRepo(ref, userToken);
+    const { root, sha } = await fetchRepo(ref, userToken);
 
     await updateJob(jobId, "files");
     const { files, languages } = walkRepo(root);
     const totalLoc = files.reduce((s, f) => s + f.loc, 0);
     await updateJob(jobId, "stack", {
+      // Recorded so a grill started later can be generated against this exact
+      // tree instead of whatever HEAD has become since.
+      sha: sha ?? undefined,
       languages,
       totalFiles: files.length,
       totalLoc,

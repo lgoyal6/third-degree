@@ -128,6 +128,7 @@ export default function MapView({ jobId }: { jobId: string }) {
         <StatusLine
           repo={meta ? `${meta.owner}/${meta.name}` : job?.url ?? "reading repo"}
           branch={meta?.defaultBranch}
+          sha={map.sha}
           files={map.totalFiles}
           lines={map.totalLoc}
         >

@@ -20,9 +20,10 @@ async function prepare(
   const [session, job] = await Promise.all([getSession(sessionId), getJob(mapJobId)]);
   if (!session || !job) return;
   try {
-    // Warm instances still have the extracted tarball from the map run;
-    // otherwise this re-downloads it.
-    const root = await fetchRepo(ref, userToken);
+    // Pinned to the commit the map was indexed from, so the questions are
+    // generated against the same tree the map describes. Warm instances already
+    // have that commit extracted; otherwise this re-downloads it.
+    const { root } = await fetchRepo(ref, userToken, job.map.sha);
     const { files } = walkRepo(root);
     session.questions = await generateQuestions(root, job.map, files);
     session.status = "ready";
