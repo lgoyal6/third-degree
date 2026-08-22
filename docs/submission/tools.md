@@ -11,7 +11,9 @@
   deck. Every one has a
   deterministic fallback, so the product runs with no key.
 - **agent-browser** CLI for the browser QA passes (clicking through the deck, the express
-  path, and the streak rules against both local and production builds).
+  path, and the streak rules against both local and production builds), and for recording the
+  demo video against production.
+- **ffmpeg** to encode that recording and lay the narration over it.
 
 ## Framework and language
 
@@ -26,8 +28,8 @@
 - A hand-written import graph (`src/lib/imports.ts`) resolving relative paths,
   `tsconfig`/`jsconfig` aliases, and `require`/dynamic-import forms
 - **d3-force** for the dependency graph layout
-- **`next/font`** (Bricolage Grotesque, IBM Plex Sans, IBM Plex Mono) and Next's
-  `ImageResponse` for the share card OG image
+- **`next/font`** (IBM Plex Sans and IBM Plex Mono for the app, Bricolage Grotesque reserved
+  for the printed verdict) and Next's `ImageResponse` for the share card
 
 ## Infrastructure
 
