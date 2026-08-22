@@ -216,7 +216,7 @@ export default function DepGraph({
                 y1={l.y1}
                 x2={l.x2}
                 y2={l.y2}
-                stroke={active ? "#FFB224" : "#3B3226"}
+                stroke={active ? "#FFB224" : "#3E4652"}
                 strokeWidth={active ? 1.4 : 0.7}
                 opacity={hover && !active ? 0.25 : 0.8}
               />
@@ -280,9 +280,9 @@ export default function DepGraph({
                     width={spot.w + 8}
                     height={13}
                     rx={3}
-                    fill="#14100B"
+                    fill="#08090B"
                     fillOpacity={0.82}
-                    stroke={hover === n.id ? "#FFB224" : "#3B3226"}
+                    stroke={hover === n.id ? "#FFB224" : "#3E4652"}
                     strokeWidth={0.6}
                   />
                   <text

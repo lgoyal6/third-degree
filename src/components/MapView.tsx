@@ -127,7 +127,7 @@ export default function MapView({ jobId }: { jobId: string }) {
       {meta ? (
         <header className="fade-up">
           <div className="flex items-baseline justify-between gap-4">
-            <p className="font-mono text-xs text-ink-muted">under the lamp</p>
+            <p className="font-mono text-xs text-ink-muted">mapped from source</p>
             <StreakBadge />
           </div>
           <h1 className="font-display mt-1 text-4xl font-bold tracking-tight">
@@ -174,7 +174,7 @@ export default function MapView({ jobId }: { jobId: string }) {
 
       {/* The blurb — orientation before anything else */}
       {map.summary ? (
-        <section className="fade-up lamp-glow rounded-xl border border-lamp/30 bg-surface p-6" aria-label="Summary">
+        <section className="fade-up rounded-xl border border-lamp/30 bg-surface p-6" aria-label="Summary">
           {/* Measure capped and the walkthrough set a step down: at full width and
               full size these two paragraphs opened the map with a wall of prose.
               Columns were worse, since the structure text is far the longer of
@@ -354,7 +354,7 @@ export default function MapView({ jobId }: { jobId: string }) {
 
       {/* The test — only after they've seen the whole map */}
       {stage === "done" && (
-        <section className="fade-up lamp-glow rounded-xl border border-lamp/30 bg-surface p-8 text-center" aria-label="Start the grilling">
+        <section className="fade-up rounded-xl border border-lamp/30 bg-surface p-8 text-center" aria-label="Start the grilling">
           <p className="font-display text-2xl font-semibold">You&apos;ve seen the map.</p>
           <p className="mt-2 text-ink-muted">
             First the stack choices it made, then the questions — climbing from fundamentals to the seams, the

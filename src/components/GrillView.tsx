@@ -139,7 +139,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
             {last.score === null ? (
               <span className="text-ink-muted">ungraded</span>
             ) : (
-              <span className={last.score >= 60 ? "text-ok" : last.score >= 30 ? "text-lamp" : "text-err"}>
+              <span className={last.score >= 60 ? "text-ok" : last.score >= 30 ? "text-attention" : "text-err"}>
                 {last.score}
                 <span className="text-lg text-ink-muted">/100</span>
               </span>
@@ -248,7 +248,7 @@ function renderPrompt(prompt: string) {
 
 function Preparing({ label }: { label: string }) {
   return (
-    <main className="lamp-glow flex flex-1 items-center justify-center">
+    <main className="flex flex-1 items-center justify-center">
       <p className="pulse-soft font-mono text-sm text-lamp">{label}…</p>
     </main>
   );
@@ -277,35 +277,48 @@ function ScoreScreen({ state }: { state: ViewState }) {
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-14">
-      <section className="lamp-glow fade-up rounded-2xl border border-lamp/30 bg-surface p-8 text-center">
-        <p className="font-mono text-xs text-ink-muted">
-          {state.repo.owner}/{state.repo.name} · the verdict
-        </p>
-        <p className="mt-2">
-          <StreakBadge />
-        </p>
-        <p className="font-display mt-4 text-8xl font-bold text-lamp">{state.score}</p>
-        <p className="font-display mt-2 text-2xl font-semibold uppercase tracking-widest">{verdict}</p>
-        <p className="mt-2 text-ink-muted">{VERDICT_COPY[verdict]}</p>
+      {/* The one surface in the product that is not the editor: the verdict is a
+          document you are handed, which is also what makes it worth screenshotting. */}
+      <section className="paper fade-up rounded-sm p-8 shadow-lg shadow-black/40">
+        <div className="flex items-baseline justify-between gap-4 border-b-2 border-paper-rule pb-3">
+          <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-paper-muted">
+            third degree
+          </p>
+          <p className="font-mono text-xs text-paper-muted">
+            {state.repo.owner}/{state.repo.name}
+          </p>
+        </div>
+        <div className="mt-8 flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <p className="font-paper flex items-end gap-2 font-bold leading-none">
+              <span className="text-7xl">{state.score}</span>
+              <span className="pb-1 text-2xl text-paper-muted">/100</span>
+            </p>
+            <p className="mt-3 max-w-sm text-sm text-paper-muted">{VERDICT_COPY[verdict]}</p>
+          </div>
+          <p className="-rotate-3 rounded border-2 border-stamp px-3 py-1 font-mono text-lg font-semibold uppercase tracking-[0.2em] text-stamp">
+            {verdict}
+          </p>
+        </div>
         {state.repo.private ? (
-          <p className="mt-6 font-mono text-xs text-ink-muted">
+          <p className="mt-6 border-t border-paper-rule pt-4 font-mono text-xs text-paper-muted">
             private repo · no share card, since the questions name your files
           </p>
         ) : (
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-paper-rule pt-5">
             <button
               onClick={async () => {
                 await navigator.clipboard.writeText(shareUrl);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}
-              className="cursor-pointer rounded-lg bg-lamp px-5 py-2.5 font-medium text-bg hover:bg-lamp-bright"
+              className="cursor-pointer rounded bg-paper-ink px-5 py-2.5 font-medium text-paper hover:opacity-90"
             >
               {copied ? "Copied" : "Copy share link"}
             </button>
             <Link
               href={`/s/${state.slug}`}
-              className="rounded-lg border border-line px-5 py-2.5 font-medium hover:border-lamp"
+              className="rounded border border-paper-rule px-5 py-2.5 font-medium hover:border-paper-ink"
             >
               View card
             </Link>
@@ -313,15 +326,18 @@ function ScoreScreen({ state }: { state: ViewState }) {
         )}
       </section>
 
-      <section aria-label="Review">
+      <div className="flex items-center justify-between">
         <h2 className="font-display text-xl font-semibold">The tape</h2>
+        <StreakBadge />
+      </div>
+      <section aria-label="Review">
         <ol className="mt-4 space-y-3">
           {state.answered.map((a, i) => (
             <li key={i} className="rounded-xl border border-line bg-surface p-5">
               <div className="flex items-baseline justify-between gap-4">
                 <p className="text-sm">{renderPrompt(a.prompt)}</p>
                 <span
-                  className={`font-mono text-sm ${a.score === null ? "text-ink-muted" : a.score >= 60 ? "text-ok" : a.score >= 30 ? "text-lamp" : "text-err"}`}
+                  className={`font-mono text-sm ${a.score === null ? "text-ink-muted" : a.score >= 60 ? "text-ok" : a.score >= 30 ? "text-attention" : "text-err"}`}
                 >
                   {a.score === null ? "—" : a.score}
                 </span>

@@ -75,15 +75,13 @@ export default function Start() {
   );
 
   return (
-    <main className="lamp-glow flex flex-1 flex-col items-center justify-center px-6 py-16">
+    <main className="flex flex-1 flex-col items-center justify-center px-6 py-16">
       <div className="w-full max-w-xl text-center">
-        <p className="font-mono text-sm text-lamp mb-4">the interrogation room for your own code</p>
-        <h1 className="font-display text-6xl sm:text-7xl font-bold tracking-tight">
+        <p className="mb-4 font-mono text-sm text-ink-muted">the interrogation room for your own code</p>
+        <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
           Third Degree
         </h1>
-        <p className="mt-4 text-lg text-ink-muted">
-          You built it. Now own it.
-        </p>
+        <p className="mt-3 text-ink-muted">You built it. Now own it.</p>
 
         <form
           className="mt-10"

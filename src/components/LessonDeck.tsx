@@ -149,7 +149,7 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
   if (!deck) {
     return (
       <Shell>
-        <div className="lamp-glow rounded-xl border border-lamp/30 bg-surface p-8 text-center">
+        <div className="rounded-xl border border-lamp/30 bg-surface p-8 text-center">
           <p className="pulse-soft font-mono text-sm text-lamp">
             Reading the choices your stack made…
           </p>
@@ -213,7 +213,7 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
 
       <article
         key={index}
-        className="fade-up lamp-glow rounded-xl border border-lamp/30 bg-surface p-8"
+        className="fade-up rounded-xl border border-lamp/30 bg-surface p-8"
         aria-label={`Card ${index + 1}: ${card.using}`}
       >
         <p className="font-mono text-xs text-lamp">using</p>
