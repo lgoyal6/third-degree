@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { CategoryNode, MapJob, RouteInfo, Stage } from "@/lib/types";
 import DepGraph from "@/components/DepGraph";
 import StreakBadge from "@/components/StreakBadge";
+import StatusLine from "@/components/StatusLine";
 
 const STAGE_LABELS: [Stage, string][] = [
   ["meta", "Finding the repo"],
@@ -84,11 +85,11 @@ export default function MapView({ jobId }: { jobId: string }) {
   if (lost) {
     return (
       <Shell>
-        <div className="rounded-xl border border-line bg-surface p-8 text-center">
+        <div className="rounded-md border border-line bg-surface p-8 text-center">
           <p className="text-lg">This map expired.</p>
           <Link
             href="/"
-            className="mt-4 inline-block rounded-lg bg-lamp px-5 py-2.5 font-medium text-bg hover:bg-lamp-bright"
+            className="mt-4 inline-block rounded bg-lamp px-5 py-2.5 font-medium text-bg hover:bg-lamp-bright"
           >
             Map a repo
           </Link>
@@ -103,11 +104,11 @@ export default function MapView({ jobId }: { jobId: string }) {
   if (stage === "error") {
     return (
       <Shell>
-        <div className="rounded-xl border border-err/40 bg-surface p-8 text-center">
+        <div className="rounded-md border border-err/40 bg-surface p-8 text-center">
           <p className="font-mono text-sm text-err">{job?.error}</p>
           <Link
             href="/"
-            className="mt-5 inline-block rounded-lg bg-lamp px-5 py-2.5 font-medium text-bg hover:bg-lamp-bright"
+            className="mt-5 inline-block rounded bg-lamp px-5 py-2.5 font-medium text-bg hover:bg-lamp-bright"
           >
             Try another repo
           </Link>
@@ -122,28 +123,36 @@ export default function MapView({ jobId }: { jobId: string }) {
     : null;
 
   return (
-    <Shell>
+    <Shell
+      status={
+        <StatusLine
+          repo={meta ? `${meta.owner}/${meta.name}` : job?.url ?? "reading repo"}
+          branch={meta?.defaultBranch}
+          files={map.totalFiles}
+          lines={map.totalLoc}
+        >
+          {stage !== "done" && <span className="pulse-soft text-lamp">{stage}</span>}
+          {meta && <span className="text-ink-muted">★ {meta.stars.toLocaleString()}</span>}
+          <StreakBadge />
+        </StatusLine>
+      }
+    >
       {/* Repo header */}
       {meta ? (
         <header className="fade-up">
-          <div className="flex items-baseline justify-between gap-4">
-            <p className="font-mono text-xs text-ink-muted">mapped from source</p>
-            <StreakBadge />
-          </div>
-          <h1 className="font-display mt-1 text-4xl font-bold tracking-tight">
-            {meta.owner}
-            <span className="text-ink-muted">/</span>
-            {meta.name}
+          {/* The status line already names the repo; repeating it 40px lower was
+              the page saying the same thing twice. Kept for semantics only. */}
+          <h1 className="sr-only">
+            {meta.owner}/{meta.name}
           </h1>
-          {meta.description && <p className="mt-2 text-ink-muted">{meta.description}</p>}
-          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-xs text-ink-muted">
-            {map.totalFiles !== undefined && <span>{map.totalFiles.toLocaleString()} files</span>}
-            {map.totalLoc !== undefined && <span>{map.totalLoc.toLocaleString()} lines</span>}
-            <span>★ {meta.stars.toLocaleString()}</span>
-          </div>
+          {meta.description ? (
+            <p className="text-lg leading-snug">{meta.description}</p>
+          ) : (
+            <p className="text-lg leading-snug text-ink-muted">No description on this repo.</p>
+          )}
         </header>
       ) : (
-        <SkeletonBlock h="h-28" label="repo" />
+        <SkeletonBlock h="h-14" label="repo" />
       )}
 
       {/* Progress rail — physical, not a percentage */}
@@ -174,7 +183,7 @@ export default function MapView({ jobId }: { jobId: string }) {
 
       {/* The blurb — orientation before anything else */}
       {map.summary ? (
-        <section className="fade-up rounded-xl border border-lamp/30 bg-surface p-6" aria-label="Summary">
+        <section className="fade-up rounded-md border border-lamp/30 bg-surface p-6" aria-label="Summary">
           {/* Measure capped and the walkthrough set a step down: at full width and
               full size these two paragraphs opened the map with a wall of prose.
               Columns were worse, since the structure text is far the longer of
@@ -192,7 +201,7 @@ export default function MapView({ jobId }: { jobId: string }) {
                 href={`${ghBase}/${map.summary.startHere.file}`}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-lg border border-line px-4 py-2 font-mono text-xs hover:border-lamp"
+                className="rounded border border-line px-4 py-2 font-mono text-xs hover:border-lamp"
               >
                 {map.summary.startHere.file}
               </a>
@@ -306,7 +315,7 @@ export default function MapView({ jobId }: { jobId: string }) {
               Routes <span className="text-ink-muted">({map.routes.length})</span>
             </SectionTitle>
             <div className="relative mt-3">
-              <div className="max-h-80 overflow-y-auto rounded-xl border border-line bg-surface">
+              <div className="max-h-80 overflow-y-auto rounded-md border border-line bg-surface">
                 <table className="w-full table-fixed text-left font-mono text-xs">
                   <tbody>
                     {map.routes.map((r, i) => (
@@ -336,7 +345,7 @@ export default function MapView({ jobId }: { jobId: string }) {
           </SectionTitle>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {map.models.map((m) => (
-              <div key={m.name} className="rounded-xl border border-line bg-surface p-4">
+              <div key={m.name} className="rounded-md border border-line bg-surface p-4">
                 <p className="font-mono text-sm text-lamp">{m.name}</p>
                 <ul className="mt-2 space-y-0.5 font-mono text-xs text-ink-muted">
                   {m.fields.slice(0, 8).map((f) => (
@@ -354,7 +363,7 @@ export default function MapView({ jobId }: { jobId: string }) {
 
       {/* The test — only after they've seen the whole map */}
       {stage === "done" && (
-        <section className="fade-up rounded-xl border border-lamp/30 bg-surface p-8 text-center" aria-label="Start the grilling">
+        <section className="fade-up rounded-md border border-lamp/30 bg-surface p-8 text-center" aria-label="Start the grilling">
           <p className="font-display text-2xl font-semibold">You&apos;ve seen the map.</p>
           <p className="mt-2 text-ink-muted">
             First the stack choices it made, then the questions — climbing from fundamentals to the seams, the
@@ -362,7 +371,7 @@ export default function MapView({ jobId }: { jobId: string }) {
           </p>
           <Link
             href={`/map/${jobId}/lessons`}
-            className="mt-5 inline-block rounded-lg bg-lamp px-7 py-3 font-medium text-bg hover:bg-lamp-bright"
+            className="mt-5 inline-block rounded bg-lamp px-7 py-3 font-medium text-bg hover:bg-lamp-bright"
           >
             Brief me, then grill me →
           </Link>
@@ -391,11 +400,14 @@ export default function MapView({ jobId }: { jobId: string }) {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, status }: { children: React.ReactNode; status?: React.ReactNode }) {
   return (
-    <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 pt-14">
-      {children}
-    </main>
+    <>
+      {status}
+      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-6 pt-10">
+        {children}
+      </main>
+    </>
   );
 }
 
@@ -407,7 +419,7 @@ function SkeletonBlock({ h, label }: { h: string; label: string }) {
   return (
     <div
       aria-hidden
-      className={`${h} pulse-soft rounded-xl border border-line/60 bg-surface/50`}
+      className={`${h} pulse-soft rounded-md border border-line/60 bg-surface/50`}
       data-skeleton={label}
     />
   );
@@ -415,7 +427,7 @@ function SkeletonBlock({ h, label }: { h: string; label: string }) {
 
 function CategoryCard({ node }: { node: CategoryNode }) {
   return (
-    <div className="rounded-xl border border-line bg-surface p-4">
+    <div className="rounded-md border border-line bg-surface p-4">
       <div className="flex items-baseline justify-between">
         <p className="font-display font-semibold">{node.name}</p>
         <p className="font-mono text-xs text-ink-muted">

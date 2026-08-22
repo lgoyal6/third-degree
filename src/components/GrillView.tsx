@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { GrillView as ViewState } from "@/lib/grill/view";
 import { VERDICT_COPY, type Verdict } from "@/lib/grill/types";
 import StreakBadge from "@/components/StreakBadge";
+import StatusLine from "@/components/StatusLine";
 import { recordCompletion } from "@/lib/progress";
 
 const LAYER_LABEL: Record<number, string> = { 1: "fundamentals", 2: "modules", 3: "seams", 4: "the whole system" };
@@ -130,11 +131,17 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
   // Feedback interstitial after each answer
   if (last) {
     return (
+      <>
+      <StatusLine repo={`${state.repo.owner}/${state.repo.name}`} branch={state.repo.defaultBranch}>
+        <span className="text-ink-muted">graded</span>
+        <StreakBadge />
+      </StatusLine>
       <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center gap-6 px-6 py-12">
         <p className="font-mono text-xs text-ink-muted">
-          question {state.currentIndex} of {state.total}
+          question {String(state.currentIndex).padStart(2, "0")} of{" "}
+          {String(state.total).padStart(2, "0")}
         </p>
-        <div className="fade-up rounded-xl border border-line bg-surface p-6">
+        <div className="fade-up rounded-md border border-line bg-surface p-6">
           <p className="font-display text-3xl font-bold">
             {last.score === null ? (
               <span className="text-ink-muted">ungraded</span>
@@ -146,7 +153,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
             )}
           </p>
           <p className="mt-3">{last.feedback}</p>
-          <div className="mt-5 rounded-lg bg-surface-2 p-4">
+          <div className="mt-5 rounded bg-surface-2 p-4">
             <p className="font-mono text-xs text-lamp">the answer</p>
             <pre className="mt-2 whitespace-pre-wrap font-mono text-xs leading-relaxed text-ink-muted">{last.reveal}</pre>
           </div>
@@ -154,26 +161,29 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
         <button
           onClick={next}
           autoFocus
-          className="cursor-pointer self-end rounded-lg bg-lamp px-6 py-3 font-medium text-bg hover:bg-lamp-bright"
+          className="cursor-pointer self-end rounded bg-lamp px-6 py-3 font-medium text-bg hover:bg-lamp-bright"
         >
           {state.currentIndex >= state.total ? "See the verdict" : "Next question"} ⏎
         </button>
       </main>
+      </>
     );
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-8">
+    <>
+      <StatusLine repo={`${state.repo.owner}/${state.repo.name}`} branch={state.repo.defaultBranch}>
+        <span className="text-lamp">{LAYER_LABEL[q.layer]}</span>
+        <StreakBadge />
+        <span className="tabular-nums text-ink" aria-label="elapsed time">
+          {String(Math.floor(elapsed / 60)).padStart(2, "0")}:{String(elapsed % 60).padStart(2, "0")}
+        </span>
+      </StatusLine>
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 py-6">
       <div className="flex items-baseline justify-between font-mono text-xs text-ink-muted">
         <span>
-          {state.repo.owner}/{state.repo.name} · question {state.currentIndex + 1} of {state.total} ·{" "}
-          <span className="text-lamp">{LAYER_LABEL[q.layer]}</span>
-        </span>
-        <span className="flex items-baseline gap-5">
-          <StreakBadge />
-          <span aria-label="elapsed time">
-            {String(Math.floor(elapsed / 60)).padStart(2, "0")}:{String(elapsed % 60).padStart(2, "0")}
-          </span>
+          question {String(state.currentIndex + 1).padStart(2, "0")} of{" "}
+          {String(state.total).padStart(2, "0")}
         </span>
       </div>
 
@@ -189,13 +199,24 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
 
       <div className={`mt-8 grid flex-1 gap-6 ${q.contextCode ? "lg:grid-cols-2" : ""}`}>
         {q.contextCode && (
-          <div className="min-h-0 overflow-auto rounded-xl border border-line bg-surface">
-            <p className="sticky top-0 border-b border-line bg-surface px-4 py-2 font-mono text-xs text-lamp">
+          <div className="min-h-0 overflow-auto rounded-md border border-line bg-surface">
+            <p className="sticky top-0 z-10 border-b border-line bg-surface px-4 py-2 font-mono text-xs text-lamp">
               {q.contextCode.file}
             </p>
-            <pre className="overflow-x-auto p-4 font-mono text-xs leading-relaxed text-ink-muted">
-              {q.contextCode.code}
-            </pre>
+            {/* Gutter numbers are the file's own lines, not a count from one */}
+            <div className="flex">
+              <div
+                aria-hidden
+                className="shrink-0 select-none border-r border-line px-3 py-4 text-right font-mono text-xs leading-relaxed text-ink-muted/40"
+              >
+                {q.contextCode.code.split("\n").map((_, i) => (
+                  <div key={i}>{(q.contextCode?.startLine ?? 1) + i}</div>
+                ))}
+              </div>
+              <pre className="overflow-x-auto px-4 py-4 font-mono text-xs leading-relaxed text-ink-muted">
+                {q.contextCode.code}
+              </pre>
+            </div>
           </div>
         )}
 
@@ -214,21 +235,22 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
             }}
             placeholder="Type your answer. Specifics beat generalities — name files, functions, fields."
             rows={q.kind === "overview" ? 12 : 7}
-            className="w-full flex-none resize-none rounded-xl border border-line bg-surface p-4 font-mono text-sm placeholder:text-ink-muted/50"
+            className="w-full flex-none resize-none rounded-md border border-line bg-surface p-4 font-mono text-sm placeholder:text-ink-muted/50"
           />
           <div className="flex items-center justify-between">
             <p className="font-mono text-xs text-ink-muted">⏎ submit · shift+⏎ newline · esc quit</p>
             <button
               onClick={submit}
               disabled={submitting || !answer.trim()}
-              className="cursor-pointer rounded-lg bg-lamp px-6 py-2.5 font-medium text-bg hover:bg-lamp-bright disabled:opacity-50"
+              className="cursor-pointer rounded bg-lamp px-6 py-2.5 font-medium text-bg hover:bg-lamp-bright disabled:opacity-50"
             >
               {submitting ? "Grading…" : "Answer"}
             </button>
           </div>
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 }
 
@@ -257,11 +279,11 @@ function Preparing({ label }: { label: string }) {
 function Message({ text, cta }: { text: string; cta: string }) {
   return (
     <main className="flex flex-1 items-center justify-center px-6">
-      <div className="rounded-xl border border-line bg-surface p-8 text-center">
+      <div className="rounded-md border border-line bg-surface p-8 text-center">
         <p>{text}</p>
         <Link
           href="/"
-          className="mt-4 inline-block rounded-lg bg-lamp px-5 py-2.5 font-medium text-bg hover:bg-lamp-bright"
+          className="mt-4 inline-block rounded bg-lamp px-5 py-2.5 font-medium text-bg hover:bg-lamp-bright"
         >
           {cta}
         </Link>
@@ -276,7 +298,13 @@ function ScoreScreen({ state }: { state: ViewState }) {
   const verdict = (state.verdict ?? "raw") as Verdict;
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-14">
+    <>
+    <StatusLine repo={`${state.repo.owner}/${state.repo.name}`} branch={state.repo.defaultBranch}>
+      <span className="text-ink-muted">
+        {state.answered.length} of {state.total} answered
+      </span>
+    </StatusLine>
+    <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-10">
       {/* The one surface in the product that is not the editor: the verdict is a
           document you are handed, which is also what makes it worth screenshotting. */}
       <section className="paper fade-up rounded-sm p-8 shadow-lg shadow-black/40">
@@ -333,7 +361,7 @@ function ScoreScreen({ state }: { state: ViewState }) {
       <section aria-label="Review">
         <ol className="mt-4 space-y-3">
           {state.answered.map((a, i) => (
-            <li key={i} className="rounded-xl border border-line bg-surface p-5">
+            <li key={i} className="rounded-md border border-line bg-surface p-5">
               <div className="flex items-baseline justify-between gap-4">
                 <p className="text-sm">{renderPrompt(a.prompt)}</p>
                 <span
@@ -355,5 +383,6 @@ function ScoreScreen({ state }: { state: ViewState }) {
         </Link>
       </footer>
     </main>
+    </>
   );
 }

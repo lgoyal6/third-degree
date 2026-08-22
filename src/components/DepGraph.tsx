@@ -200,7 +200,7 @@ export default function DepGraph({
         <span className="ml-auto opacity-60">dot size = lines of code · link = an import</span>
       </div>
 
-      <div className="relative mt-3 overflow-hidden rounded-xl border border-line bg-surface">
+      <div className="relative mt-3 overflow-hidden rounded-md border border-line bg-surface">
         <svg
           viewBox={`${layout.view.x} ${layout.view.y} ${layout.view.w} ${layout.view.h}`}
           className="block h-auto w-full"
@@ -302,7 +302,7 @@ export default function DepGraph({
 
         {hovered && (
           <div
-            className="pointer-events-none absolute z-10 rounded-lg border border-line bg-surface-2 px-3 py-2 font-mono text-xs shadow-lg"
+            className="pointer-events-none absolute z-10 rounded border border-line bg-surface-2 px-3 py-2 font-mono text-xs shadow-lg"
             style={{
               left: `${((hovered.x - layout.view.x) / layout.view.w) * 100}%`,
               top: `${((hovered.y - layout.view.y) / layout.view.h) * 100}%`,

@@ -102,12 +102,12 @@ export default function Start() {
               placeholder="github.com/you/that-repo-you-shipped"
               autoComplete="off"
               spellCheck={false}
-              className="flex-1 rounded-lg border border-line bg-surface px-4 py-3 font-mono text-sm text-ink placeholder:text-ink-muted/60 focus-visible:outline-offset-0"
+              className="flex-1 rounded border border-line bg-surface px-4 py-3 font-mono text-sm text-ink placeholder:text-ink-muted/60 focus-visible:outline-offset-0"
             />
             <button
               type="submit"
               disabled={busy}
-              className="cursor-pointer rounded-lg bg-lamp px-5 py-3 font-medium text-bg transition-colors duration-150 hover:bg-lamp-bright disabled:opacity-60"
+              className="cursor-pointer rounded bg-lamp px-5 py-3 font-medium text-bg transition-colors duration-150 hover:bg-lamp-bright disabled:opacity-60"
             >
               {busy ? "Opening…" : "Map it"}
             </button>
@@ -129,7 +129,7 @@ export default function Start() {
           <div className="mt-10">
             <a
               href="/api/auth/github"
-              className="inline-block rounded-lg border border-line px-4 py-2 font-mono text-xs text-ink-muted hover:border-lamp hover:text-ink"
+              className="inline-block rounded border border-line px-4 py-2 font-mono text-xs text-ink-muted hover:border-lamp hover:text-ink"
             >
               connect github for private repos
             </a>
@@ -141,7 +141,7 @@ export default function Start() {
         )}
 
         {repos !== null && (
-          <div className="fade-up mt-10 overflow-hidden rounded-xl border border-line bg-surface text-left">
+          <div className="fade-up mt-10 overflow-hidden rounded-md border border-line bg-surface text-left">
             <div className="flex items-baseline justify-between gap-4 border-b border-line px-4 py-2.5">
               <p className="font-mono text-xs text-lamp">
                 your repos <span className="text-ink-muted">{repos.length}</span>

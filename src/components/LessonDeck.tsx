@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { LessonCard } from "@/lib/types";
 import StreakBadge from "@/components/StreakBadge";
+import StatusLine from "@/components/StatusLine";
 import { DECK_POINTS, recordCompletion } from "@/lib/progress";
 
 interface Deck {
@@ -127,7 +128,7 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
   if (failure) {
     return (
       <Shell>
-        <div className="rounded-xl border border-line bg-surface p-8 text-center">
+        <div className="rounded-md border border-line bg-surface p-8 text-center">
           <p className="text-lg">
             {failure === "expired"
               ? "This map expired."
@@ -137,7 +138,7 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
           </p>
           <Link
             href={failure === "unfinished" ? `/map/${jobId}` : "/"}
-            className="mt-4 inline-block rounded-lg bg-lamp px-5 py-2.5 font-medium text-bg hover:bg-lamp-bright"
+            className="mt-4 inline-block rounded bg-lamp px-5 py-2.5 font-medium text-bg hover:bg-lamp-bright"
           >
             {failure === "unfinished" ? "Back to the map" : "Map a repo"}
           </Link>
@@ -149,12 +150,12 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
   if (!deck) {
     return (
       <Shell>
-        <div className="rounded-xl border border-lamp/30 bg-surface p-8 text-center">
+        <div className="rounded-md border border-lamp/30 bg-surface p-8 text-center">
           <p className="pulse-soft font-mono text-sm text-lamp">
             Reading the choices your stack made…
           </p>
         </div>
-        <div aria-hidden className="pulse-soft h-64 rounded-xl border border-line/60 bg-surface/50" />
+        <div aria-hidden className="pulse-soft h-64 rounded-md border border-line/60 bg-surface/50" />
       </Shell>
     );
   }
@@ -162,13 +163,13 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
   if (total === 0) {
     return (
       <Shell>
-        <div className="rounded-xl border border-line bg-surface p-8 text-center">
+        <div className="rounded-md border border-line bg-surface p-8 text-center">
           <p className="text-lg">Nothing to teach on this one.</p>
           <p className="mt-2 text-ink-muted">Straight to the questions, then.</p>
           <button
             onClick={startGrill}
             disabled={grilling}
-            className="mt-5 cursor-pointer rounded-lg bg-lamp px-6 py-2.5 font-medium text-bg hover:bg-lamp-bright disabled:opacity-60"
+            className="mt-5 cursor-pointer rounded bg-lamp px-6 py-2.5 font-medium text-bg hover:bg-lamp-bright disabled:opacity-60"
           >
             {grilling ? "Preparing the room…" : "Grill me on it →"}
           </button>
@@ -181,24 +182,16 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
   const ghBase = `https://github.com/${deck.repo.owner}/${deck.repo.name}/blob/${deck.repo.defaultBranch}`;
 
   return (
-    <Shell>
-      <header className="flex items-baseline justify-between gap-4">
-        <div>
-          <p className="font-mono text-xs text-ink-muted">the choices you shipped</p>
-          <h1 className="font-display mt-1 text-2xl font-bold tracking-tight">
-            {deck.repo.owner}
-            <span className="text-ink-muted">/</span>
-            {deck.repo.name}
-          </h1>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <p className="font-mono text-xs text-ink-muted">
-            {index + 1} / {total}
-          </p>
+    <Shell
+      status={
+        <StatusLine repo={`${deck.repo.owner}/${deck.repo.name}`} branch={deck.repo.defaultBranch}>
+          <span className="text-ink-muted">
+            card {index + 1} of {total}
+          </span>
           <StreakBadge />
-        </div>
-      </header>
-
+        </StatusLine>
+      }
+    >
       <ol className="flex gap-1.5" aria-label="Deck progress">
         {deck.lessons.map((l, i) => (
           <li
@@ -213,9 +206,17 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
 
       <article
         key={index}
-        className="fade-up rounded-xl border border-lamp/30 bg-surface p-8"
+        className="fade-up flex gap-5 rounded-md border border-line bg-surface p-8"
         aria-label={`Card ${index + 1}: ${card.using}`}
       >
+        {/* Gutter: a deck position is a real sequence, so the number is information */}
+        <div
+          aria-hidden
+          className="hidden shrink-0 select-none border-r border-line pr-5 font-mono text-sm text-ink-muted/50 sm:block"
+        >
+          {String(index + 1).padStart(2, "0")}
+        </div>
+        <div className="min-w-0">
         <p className="font-mono text-xs text-lamp">using</p>
         <h2 className="font-display mt-1 text-3xl font-bold tracking-tight">{card.using}</h2>
         {card.insteadOf && (
@@ -243,20 +244,21 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
                 href={`${ghBase}/${path}`}
                 target="_blank"
                 rel="noreferrer"
-                className="rounded-lg border border-line px-3 py-1.5 font-mono text-xs hover:border-lamp"
+                className="rounded border border-line px-3 py-1.5 font-mono text-xs hover:border-lamp"
               >
                 {path}
               </a>
             ))}
           </div>
         )}
+        </div>
       </article>
 
       <div className="flex items-center justify-between gap-4">
         <button
           onClick={back}
           disabled={index === 0}
-          className="cursor-pointer rounded-lg border border-line px-4 py-2.5 font-mono text-xs text-ink-muted hover:border-lamp hover:text-ink disabled:cursor-default disabled:opacity-30"
+          className="cursor-pointer rounded border border-line px-4 py-2.5 font-mono text-xs text-ink-muted hover:border-lamp hover:text-ink disabled:cursor-default disabled:opacity-30"
         >
           ← back
         </button>
@@ -264,14 +266,14 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
           <button
             onClick={startGrill}
             disabled={grilling}
-            className="cursor-pointer rounded-lg px-4 py-2.5 font-mono text-xs text-ink-muted hover:text-lamp disabled:opacity-60"
+            className="cursor-pointer rounded px-4 py-2.5 font-mono text-xs text-ink-muted hover:text-lamp disabled:opacity-60"
           >
             esc · skip all
           </button>
           <button
             onClick={next}
             disabled={grilling}
-            className="cursor-pointer rounded-lg bg-lamp px-6 py-3 font-medium text-bg hover:bg-lamp-bright disabled:opacity-60"
+            className="cursor-pointer rounded bg-lamp px-6 py-3 font-medium text-bg hover:bg-lamp-bright disabled:opacity-60"
           >
             {onLast ? (grilling ? "Preparing the room…" : "Grill me on it →") : "Next →"}
           </button>
@@ -295,10 +297,13 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, status }: { children: React.ReactNode; status?: React.ReactNode }) {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 pt-14">
-      {children}
-    </main>
+    <>
+      {status}
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 pt-10">
+        {children}
+      </main>
+    </>
   );
 }
