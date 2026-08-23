@@ -6,6 +6,7 @@ import type { CodeMap } from "../types";
 import type { FileEntry } from "../indexer/walk";
 import { buildImportGraph, type ImportGraph } from "../imports";
 import { buildSymbolGraph, type SymbolRef } from "../indexer/symbols";
+import { mentionsPath, mineCommit } from "../indexer/history";
 import type { ContextCode, GrillQuestion } from "./types";
 import { KIND_TAGS, normalizeTags } from "../learn/tags";
 
@@ -130,6 +131,68 @@ function rank(s: SymbolRef): number {
   if (s.files.length >= 3 && s.files.length <= 5) n += 3;
   if (s.files.length > 6) n -= 4;
   return n;
+}
+
+// ---------- Layer 3: what a real change touched (git history) ----------
+
+const COMMIT_SCHEMA = {
+  type: "object",
+  properties: {
+    description: {
+      type: "string",
+      description:
+        "What the change accomplished, in 1-2 sentences, the way you would tell a teammate what shipped. Product terms only. Never name a file, directory, component, function, class or variable, and never quote code — the question is which files it touched.",
+    },
+  },
+  required: ["description"],
+  additionalProperties: false,
+} as const;
+
+/**
+ * §5 Tier 2. The model phrases the change; the diff is the answer key. Every
+ * failure path returns nothing, because git mining is opportunistic and must
+ * never carry the session.
+ */
+async function commitQuestions(map: CodeMap, token?: string): Promise<GrillQuestion[]> {
+  const meta = map.meta;
+  if (!meta) return [];
+  const mined = await mineCommit({ owner: meta.owner, repo: meta.name }, map.sha, token);
+  if (!mined) return [];
+
+  try {
+    const client = new Anthropic();
+    const response = await client.messages.create({
+      model: "claude-opus-4-8",
+      max_tokens: 512,
+      output_config: { effort: "low", format: { type: "json_schema", schema: COMMIT_SCHEMA } },
+      system:
+        "You turn a commit into an interview question for Third Degree. You are given a real diff from the candidate\'s own repository. Describe what the change did so that someone who knows the codebase could work out where it must have landed, without being told. The description is the only thing they see: the diff and the paths stay hidden.",
+      messages: [
+        {
+          role: "user",
+          content: `Commit subject: ${mined.subject}\n\n${mined.patch}`,
+        },
+      ],
+    });
+    if (response.stop_reason === "refusal") return [];
+    const block = response.content.find((b) => b.type === "text");
+    if (!block || block.type !== "text") return [];
+    const { description } = JSON.parse(block.text) as { description: string };
+    // A description that names one of the files answers its own question.
+    if (!description || mentionsPath(description, mined.files)) return [];
+
+    return [
+      q({
+        layer: 3,
+        kind: "commit-scope",
+        prompt: `A real commit in this repo did this: ${description.trim()} Which files did it change? List the paths.`,
+        groundTruth: { files: mined.files, reveal: mined.files.join("\n") },
+        gradingTier: 1,
+      }),
+    ];
+  } catch {
+    return []; // no credentials, or the phrasing call failed
+  }
 }
 
 // ---------- Layer 3: schema field rename ----------
@@ -356,12 +419,19 @@ export async function generateQuestions(
   root: string,
   map: CodeMap,
   files: FileEntry[],
+  token?: string,
 ): Promise<GrillQuestion[]> {
   const graph = buildImportGraph(root, files);
 
   const callSites = callSiteQuestions(root, files, 2);
+  // Both model calls at once: history mining adds a round trip that has no
+  // reason to wait for the snippet writer.
+  const [snippetSet, commits] = await Promise.all([
+    snippetQuestions(root, map, files),
+    commitQuestions(map, token),
+  ]);
   const [snippets, handlers, routeModels, imports, fieldRefs] = [
-    await snippetQuestions(root, map, files),
+    snippetSet,
     routeHandlerQuestions(map),
     routeModelQuestions(root, map, graph),
     // The reference graph answers the same seam question with sharper ground
@@ -381,8 +451,10 @@ export async function generateQuestions(
     ...handlers,
     ...routeModels,
     ...callSites,
+    ...commits,
     ...imports,
-    ...fieldRefs,
+    // One field rename is enough once history supplied a seam question of its own.
+    ...fieldRefs.slice(0, commits.length > 0 ? 1 : 2),
   ].slice(0, 10);
 
   if (questions.length < 3) {

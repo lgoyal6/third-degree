@@ -32,11 +32,25 @@ const NOISE = new Set([
 
 const IDENT = /[A-Za-z_$][A-Za-z0-9_$]{3,}/g;
 
+/**
+ * Identifiers only, and only the ones that could not be an English word by
+ * accident. A prose answer saying "on a missing row" is not evidence that the
+ * author read `missing` in a message string, and treating it as evidence let a
+ * generic answer clear the specificity bar.
+ */
+function looksLikeSymbol(name: string): boolean {
+  return /[A-Z_$]/.test(name.slice(1)) || name.length >= 8;
+}
+
 function identifiers(code: string): string[] {
+  // Strings and comments are prose. What they contain is not code identity.
+  const stripped = code
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/\/\/[^\n]*/g, " ")
+    .replace(/(['"`])(?:\\.|(?!\1)[\s\S])*\1/g, " ");
   const out = new Set<string>();
-  for (const raw of code.match(IDENT) ?? []) {
-    const token = raw.toLowerCase();
-    if (NOISE.has(token)) continue;
+  for (const raw of stripped.match(IDENT) ?? []) {
+    if (NOISE.has(raw.toLowerCase()) || !looksLikeSymbol(raw)) continue;
     out.add(raw);
   }
   return [...out];

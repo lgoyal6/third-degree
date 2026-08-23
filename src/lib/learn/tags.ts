@@ -34,6 +34,7 @@ export const KIND_TAGS: Record<string, string[]> = {
   "route-models": ["route-data-flow"],
   imports: ["import-blast-radius"],
   "call-sites": ["call-site-blast-radius"],
+  "commit-scope": ["change-surface"],
   "field-refs": ["schema-rename-blast-radius"],
   overview: ["system-overview"],
 };

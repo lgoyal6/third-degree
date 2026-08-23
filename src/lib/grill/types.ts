@@ -5,6 +5,7 @@ export type QuestionKind =
   | "route-models" // Layer 2 — which models does this route touch
   | "imports" // Layer 3 — blast radius via import graph
   | "call-sites" // Layer 3 — blast radius of one symbol, via the reference graph
+  | "commit-scope" // Layer 3 — which files a described change touched, from history
   | "field-refs" // Layer 3 — blast radius of a schema field rename
   | "overview"; // Layer 4 — describe the whole system, scored on groundedness
 

@@ -25,7 +25,7 @@ async function prepare(
     // have that commit extracted; otherwise this re-downloads it.
     const { root } = await fetchRepo(ref, userToken, job.map.sha);
     const { files } = walkRepo(root);
-    session.questions = await generateQuestions(root, job.map, files);
+    session.questions = await generateQuestions(root, job.map, files, userToken);
     session.status = "ready";
     await saveSession(session);
   } catch (err) {
