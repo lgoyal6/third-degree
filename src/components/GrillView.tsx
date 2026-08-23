@@ -188,6 +188,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
               )}
             </p>
             <p className="font-mono text-xs text-lamp">{LAYER_LABEL[lastLayer] ?? ""}</p>
+            <ConceptTags tags={graded?.conceptTags ?? []} />
           </div>
           <p className="px-6 pt-3 leading-relaxed">{last.feedback}</p>
 
@@ -324,6 +325,23 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
   );
 }
 
+/** What the question was really testing, in transferable terms (§8). */
+function ConceptTags({ tags }: { tags: string[] }) {
+  if (tags.length === 0) return null;
+  return (
+    <span className="flex flex-wrap items-baseline gap-1.5">
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className="rounded border border-line px-1.5 font-mono text-[11px] text-ink-muted"
+        >
+          {tag}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function renderPrompt(prompt: string) {
   // Render `code` spans in prompts
   const parts = prompt.split(/(`[^`]+`)/g);
@@ -442,6 +460,9 @@ function ScoreScreen({ state }: { state: ViewState }) {
               </div>
               <p className="mt-2 font-mono text-xs text-ink-muted">you said: {a.answer}</p>
               <p className="mt-2 text-xs text-ink-muted">{a.feedback}</p>
+              <div className="mt-3">
+                <ConceptTags tags={a.conceptTags} />
+              </div>
             </li>
           ))}
         </ol>

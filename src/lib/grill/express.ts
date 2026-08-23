@@ -4,6 +4,7 @@ import type { CodeMap } from "../types";
 import { mapPaths } from "../indexer/paths";
 import type { GradeResult } from "./grade";
 import { extractFileTokens, fileMatched } from "./match";
+import { KIND_TAGS } from "../learn/tags";
 import type { GrillQuestion } from "./types";
 
 const HUB_COUNT = 8;
@@ -84,6 +85,7 @@ export function buildExpressQuestion(map: CodeMap): GrillQuestion {
       reveal: revealParts.join("\n"),
     },
     gradingTier: 1,
+    conceptTags: KIND_TAGS.overview,
   };
 }
 

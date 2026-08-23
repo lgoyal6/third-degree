@@ -24,6 +24,7 @@ export interface GrillView {
   answered: {
     id: string;
     prompt: string;
+    conceptTags: string[];
     layer: number;
     answer: string;
     score: number | null;
@@ -63,6 +64,8 @@ export function publicView(session: GrillSession): GrillView {
       return {
         id: question?.id ?? "",
         prompt: question?.prompt ?? "",
+        // Only on answered questions — on a live one a tag can restate the answer.
+        conceptTags: question?.conceptTags ?? [],
         layer: question?.layer ?? 1,
         answer: a.answer,
         score: a.score,

@@ -133,6 +133,7 @@ export async function nextHint(
             // Nth time they have asked at this rung: go deeper, never repeat.
             passAtThisRung: pass,
             question: question.prompt,
+            conceptTags: question.conceptTags,
             theirCode: question.contextCode,
             theCorrectAnswer: question.groundTruth.reveal,
             whatTheyJustSaid: said.slice(0, 2000),

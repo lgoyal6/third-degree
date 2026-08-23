@@ -31,6 +31,7 @@ export interface GrillQuestion {
   contextCode?: ContextCode;
   groundTruth: GroundTruth;
   gradingTier: 1 | 3;
+  conceptTags?: string[]; // emergent, free-form (BUILD_PLAN §8)
 }
 
 export interface Attempt {

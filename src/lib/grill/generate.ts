@@ -6,6 +6,7 @@ import type { CodeMap } from "../types";
 import type { FileEntry } from "../indexer/walk";
 import { buildImportGraph, type ImportGraph } from "../imports";
 import type { ContextCode, GrillQuestion } from "./types";
+import { KIND_TAGS, normalizeTags } from "../learn/tags";
 
 const CODE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 
@@ -37,7 +38,11 @@ function snippetOf(root: string, file: string, maxLines = 36): ContextCode {
 }
 
 function q(partial: Omit<GrillQuestion, "id">): GrillQuestion {
-  return { id: randomUUID(), ...partial };
+  return {
+    id: randomUUID(),
+    conceptTags: KIND_TAGS[partial.kind],
+    ...partial,
+  };
 }
 
 // ---------- Layer 3: import blast radius ----------
@@ -191,9 +196,15 @@ const SNIPPET_QUESTIONS_SCHEMA = {
             items: { type: "string" },
             description: "Function/variable names from the snippet a grounded answer would mention.",
           },
+          conceptTags: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "One or two lowercase-hyphenated slugs naming the transferable idea being tested, so the same mistake can resurface on a different repo later: 'stale-closure', 'promise-all-vs-sequential', 'array-of-arrays-flatten'. Name the idea, never this repo's files or symbols, and never give away the answer.",
+          },
           reveal: { type: "string", description: "The correct answer in 1-3 sentences." },
         },
-        required: ["file", "kind", "prompt", "keyPoints", "keySymbols", "reveal"],
+        required: ["file", "kind", "prompt", "keyPoints", "keySymbols", "conceptTags", "reveal"],
         additionalProperties: false,
       },
     },
@@ -248,6 +259,7 @@ async function snippetQuestions(root: string, map: CodeMap, files: FileEntry[]):
         prompt: string;
         keyPoints: string[];
         keySymbols: string[];
+        conceptTags: string[];
         reveal: string;
       }[];
     };
@@ -266,6 +278,7 @@ async function snippetQuestions(root: string, map: CodeMap, files: FileEntry[]):
           keySymbols: gq.keySymbols,
           reveal: gq.reveal,
         },
+        conceptTags: normalizeTags(gq.conceptTags ?? []),
         gradingTier: 3,
       }),
     );
