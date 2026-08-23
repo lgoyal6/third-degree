@@ -21,46 +21,46 @@ camera. Open these in tabs before you hit record.
 
 ## The shots
 
-**0:00 - 0:12 — the hook.** No screen yet, or a static title card.
+**0:00 - 0:12 - the hook.** No screen yet, or a static title card.
 > "Everyone is shipping code faster than they can explain it. Then an interviewer asks what
 > happens when two requests hit this endpoint at once, and the room goes quiet."
 
-**0:12 - 0:22 — paste a repo.** Home screen, type `vercel/ai-chatbot`, hit go. Cut to the
+**0:12 - 0:22 - paste a repo.** Home screen, type `vercel/ai-chatbot`, hit go. Cut to the
 warmed map tab as it finishes painting.
 > "Paste any public repo. No signup."
 
-**0:22 - 0:40 — the map.** Scroll: summary, then the dependency graph. Hover one big node so
+**0:22 - 0:40 - the map.** Scroll: summary, then the dependency graph. Hover one big node so
 the blast radius highlights. Keep scrolling past routes and the data model.
 > "Ten seconds later: what the app is, every file and every import, the routes, the models.
 > 176 files I did not write."
 
-**0:40 - 0:58 — the lesson deck.** Card 1 (App Router with route groups), press the right
+**0:40 - 0:58 - the lesson deck.** Card 1 (App Router with route groups), press the right
 arrow to card 2 (Drizzle instead of Prisma). Point the cursor at the evidence links.
 > "First it teaches the choices the repo made. Drizzle instead of Prisma, and what that costs
 > you. Every card links to the real file, because the card was built from the repo, not from a
 > guess."
 
-**0:58 - 1:20 — the grill.** Switch to the warmed grill tab, question 1 of 10 with the
+**0:58 - 1:20 - the grill.** Switch to the warmed grill tab, question 1 of 10 with the
 `lib/ai/models.ts` snippet on the left. Paste answer A. Show the score and the feedback line.
 > "Then it grills you. Ten questions climbing from the language constructs your code uses, to
 > which file handles a request, to what breaks when you rename a schema field. Typed answers.
 > Clock running."
 
-**1:20 - 1:45 — the express path, the money shot.** Back to the map tab, click "I already know
+**1:20 - 1:45 - the express path, the money shot.** Back to the map tab, click "I already know
 this repo". Paste answer B, which is strong but names one file that does not exist. Let the
 feedback land and hold on the callout.
 > "Or claim you already know it. One question, scored straight off the import graph. And every
 > file you name that does not exist costs you ten points. That is the tell: someone who
 > absorbed a codebase from an AI names the file where it usually lives, not where theirs is."
 
-**1:45 - 2:00 — verdict, card, close.** Show the score and doneness rating, click Copy share
+**1:45 - 2:00 - verdict, card, close.** Show the score and doneness rating, click Copy share
 link, then flash the map of this repo.
 > "You get a score, a verdict you can share, and a streak if you come back. I built it on
 > itself. Third Degree, at third-degree.vercel.app."
 
 ## Answers to paste
 
-**A — grill question 1** (`Promise.all` over `chatModels.map`):
+**A - grill question 1** (`Promise.all` over `chatModels.map`):
 
 ```
 It fires one capabilities fetch per chat model concurrently and resolves only when all of
@@ -70,7 +70,7 @@ response would stall every model behind it. Promise.all also rejects on the firs
 which is why each fetch has its own try/catch inside the map.
 ```
 
-**B — express answer, strong with one planted phantom:**
+**B - express answer, strong with one planted phantom:**
 
 ```
 It is a Next.js chatbot. lib/db/schema.ts and lib/db/queries.ts carry the data layer,

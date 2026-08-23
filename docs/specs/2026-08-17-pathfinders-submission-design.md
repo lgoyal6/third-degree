@@ -226,7 +226,7 @@ path so connecting is never required.
 
 | Fix | Detail |
 | --- | --- |
-| `ANTHROPIC_API_KEY` | Not set in production. The live map currently renders "Generated without an LLM — set ANTHROPIC_API_KEY for a real summary" to every visitor, and the grill generates zero Layer 1 questions, so it cold-opens with a structural question against §4. |
+| `ANTHROPIC_API_KEY` | Not set in production. The live map currently renders "Generated without an LLM - set ANTHROPIC_API_KEY for a real summary" to every visitor, and the grill generates zero Layer 1 questions, so it cold-opens with a structural question against §4. |
 | Share card URL | `src/app/s/[slug]/opengraph-image.tsx` hardcodes `thirddegree.dev`, which does not serve the site. Point it at the live domain. |
 | Map job TTL | `JOB_TTL_SECONDS` in `src/lib/jobs.ts` is 30 minutes, so a skipped lesson deck 404s on return. Raise to 7 days. |
 

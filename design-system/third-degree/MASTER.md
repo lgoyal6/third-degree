@@ -46,7 +46,7 @@
 
 ### Spacing Variables
 
-*Density: 4/10 — Standard*
+*Density: 4/10 - Standard*
 
 | Token | Value | Usage |
 |-------|-------|-------|
@@ -181,7 +181,7 @@
 
 ## Motion
 
-**Scroll Reveal** (Subtle) — Trigger: scroll (viewport enter) | Duration: 300-400ms | Easing: `power1.out`
+**Scroll Reveal** (Subtle) - Trigger: scroll (viewport enter) | Duration: 300-400ms | Easing: `power1.out`
 
 ```js
 gsap.from(el, { opacity: 0, y: 12, duration: 0.35, ease: 'power1.out', scrollTrigger: { trigger: el, start: 'top 90%', toggleActions: 'play none none reverse' } });
@@ -202,12 +202,12 @@ gsap.from(el, { opacity: 0, y: 12, duration: 0.35, ease: 'power1.out', scrollTri
 
 ### Additional Forbidden Patterns
 
-- ❌ **Emojis as icons** — Use SVG icons (Heroicons, Lucide, Simple Icons)
-- ❌ **Missing cursor:pointer** — All clickable elements must have cursor:pointer
-- ❌ **Layout-shifting hovers** — Avoid scale transforms that shift layout
-- ❌ **Low contrast text** — Maintain 4.5:1 minimum contrast ratio
-- ❌ **Instant state changes** — Always use transitions (150-300ms)
-- ❌ **Invisible focus states** — Focus states must be visible for a11y
+- ❌ **Emojis as icons** - Use SVG icons (Heroicons, Lucide, Simple Icons)
+- ❌ **Missing cursor:pointer** - All clickable elements must have cursor:pointer
+- ❌ **Layout-shifting hovers** - Avoid scale transforms that shift layout
+- ❌ **Low contrast text** - Maintain 4.5:1 minimum contrast ratio
+- ❌ **Instant state changes** - Always use transitions (150-300ms)
+- ❌ **Invisible focus states** - Focus states must be visible for a11y
 
 ---
 
@@ -228,12 +228,12 @@ Before delivering any UI code, verify:
 
 ---
 
-## PROJECT OVERRIDES (authoritative — Jul 27, 2026)
+## PROJECT OVERRIDES (authoritative - Jul 27, 2026)
 
 The generated palette above (slate `#0F172A` + green `#22C55E`) is exactly the
 "near-black + acid green" AI-default that BUILD_PLAN.md §7 forbids. The shipped
 tokens replace it. Typography swaps JetBrains Mono/IBM Plex for a less-default
-trio. Signature element: **the interrogation lamp** — a warm radial amber glow
+trio. Signature element: **the interrogation lamp** - a warm radial amber glow
 at the top of key surfaces (`.lamp-glow` in `src/app/globals.css`).
 
 | Token | Value | Use |
@@ -250,6 +250,6 @@ at the top of key surfaces (`.lamp-glow` in `src/app/globals.css`).
 | `--err` | `#E5484D` | Errors / destructive |
 
 Fonts: **Bricolage Grotesque** (display), **IBM Plex Sans** (body), **IBM Plex
-Mono** (code) — loaded via `next/font/google` in `src/app/layout.tsx`.
+Mono** (code) - loaded via `next/font/google` in `src/app/layout.tsx`.
 Dark-only in v1. Motion stays at dial 3/10 (subtle fades, `prefers-reduced-motion`
 respected). Everything else in the generated sections above still applies.

@@ -4,9 +4,9 @@
 
 ## Why this exists
 
-A generation of developers is shipping repos faster than they can understand them. The projects work, the commits are green, the portfolio looks real — and then an interviewer asks *"walk me through what happens when two requests hit this endpoint at the same time"* and the room goes quiet. Third Degree exists for that moment.
+A generation of developers is shipping repos faster than they can understand them. The projects work, the commits are green, the portfolio looks real - and then an interviewer asks *"walk me through what happens when two requests hit this endpoint at the same time"* and the room goes quiet. Third Degree exists for that moment.
 
-The original aim, unchanged: take a repo you built (probably with heavy AI assistance) and **teach you your own stack through it, then grill you on it until you can defend it in an interview**. It is not a code-review tool, a documentation generator, or a chatbot over your repo — it's a curriculum generated from your own code, with an interrogation at the end. Success is measured in users and community, not revenue; the growth loop is the shareable verdict card ("I scored 37 on a repo I *built*"), and the wedge is interview panic, not a desire to learn.
+The original aim, unchanged: take a repo you built (probably with heavy AI assistance) and **teach you your own stack through it, then grill you on it until you can defend it in an interview**. It is not a code-review tool, a documentation generator, or a chatbot over your repo - it's a curriculum generated from your own code, with an interrogation at the end. Success is measured in users and community, not revenue; the growth loop is the shareable verdict card ("I scored 37 on a repo I *built*"), and the wedge is interview panic, not a desire to learn.
 
 Full product thesis, milestones, and risk register: [BUILD_PLAN.md](./BUILD_PLAN.md).
 
@@ -17,11 +17,11 @@ Full product thesis, milestones, and risk register: [BUILD_PLAN.md](./BUILD_PLAN
 3. **The Lesson Deck (the choices you made).** Up to six cards on the stack decisions the repo actually made: what it uses, what it was picked over, why it fits this codebase, what it costs. Every card links to real files, and any card citing a path the map cannot prove is dropped rather than shown. Skippable, resumable, and generated only if you open it.
 4. **The Grill (then test).** Up to 10 typed-answer questions that climb a ladder: **fundamentals** (the language and DSA constructs your code actually uses) → **functions** (what this exact code does) → **modules** (which file handles this request, which models it touches) → **seams** (what breaks if you rename this schema field). Visible timer, no hints.
 5. **Or the Express Path.** Claim you already know the repo and answer one open question instead of ten. Scored with no model in the loop: hub coverage weighted by import degree, model and route coverage, minus ten points for every file you name that does not exist. Phantom references are the whole point, and the feedback names them.
-6. **The Verdict.** A 0–100 score with a doneness rating — *raw / rare / medium / well-done* — a per-question review with the correct answers, and a public share card with an auto-generated OG image. Finishing anything advances a browser-local day streak and point total. Runs on private repos get no public card, since the questions name real files.
+6. **The Verdict.** A 0–100 score with a doneness rating - *raw / rare / medium / well-done* - a per-question review with the correct answers, and a public share card with an auto-generated OG image. Finishing anything advances a browser-local day streak and point total. Runs on private repos get no public card, since the questions name real files.
 
 ## Architecture
 
-The design principle everything hangs off: **ground truth comes from the repo; the LLM phrases questions and grades open answers, but never decides what's true.** A question like "which files break if you rename `User.email`" is generated *and graded* from static analysis — the model can't hallucinate an answer key.
+The design principle everything hangs off: **ground truth comes from the repo; the LLM phrases questions and grades open answers, but never decides what's true.** A question like "which files break if you rename `User.email`" is generated *and graded* from static analysis - the model can't hallucinate an answer key.
 
 ### Map pipeline
 
@@ -29,20 +29,20 @@ The design principle everything hangs off: **ground truth comes from the repo; t
 
 ### Import graph
 
-A file-level import graph resolves relative imports, `tsconfig`/`jsconfig` path aliases (`@/*`), and `require`/dynamic-import forms against the walked file set. It powers both the map's graph visualization (nodes colored by category and sized by LOC, capped at 120 nodes / 500 edges for readability; categorical palette validated for colorblind separation and contrast against the dark surface) and the grill's blast-radius questions. The planned M3 upgrade swaps file-level edges for symbol-level references via the TypeScript compiler API — the interface is already shaped for it.
+A file-level import graph resolves relative imports, `tsconfig`/`jsconfig` path aliases (`@/*`), and `require`/dynamic-import forms against the walked file set. It powers both the map's graph visualization (nodes colored by category and sized by LOC, capped at 120 nodes / 500 edges for readability; categorical palette validated for colorblind separation and contrast against the dark surface) and the grill's blast-radius questions. The planned M3 upgrade swaps file-level edges for symbol-level references via the TypeScript compiler API - the interface is already shaped for it.
 
 ### Question engine
 
 Two generator families feed one ladder:
 
 - **Deterministic (Tier 1):** import blast radius (from the graph), schema-field rename impact (word-boundary reference search with a stoplist for generic field names, deduped across models), route-handler location, and route→model reachability (route file plus its direct imports). Ground truth is a file list or name set computed at generation time.
-- **LLM-generated (Tier 3):** for the busiest business-logic files, Claude produces a *fundamental* question (the array chain, the `await`, the loop complexity — anchored to that snippet) and a *behavior* question per snippet, via a strict JSON-schema structured output that must include key points, key symbols, and the correct answer.
+- **LLM-generated (Tier 3):** for the busiest business-logic files, Claude produces a *fundamental* question (the array chain, the `await`, the loop complexity - anchored to that snippet) and a *behavior* question per snippet, via a strict JSON-schema structured output that must include key points, key symbols, and the correct answer.
 
 ### Grading
 
-- **Tier 1** answers grade deterministically: F1 over the named-file set (recall of affected files, precision against files named that aren't affected), with guards against false credit — framework-convention basenames like `route.ts` only match when directory-qualified.
+- **Tier 1** answers grade deterministically: F1 over the named-file set (recall of affected files, precision against files named that aren't affected), with guards against false credit - framework-convention basenames like `route.ts` only match when directory-qualified.
 - **Layer 4** (the express path) grades with no model at all: coverage of the load-bearing files weighted by import degree, plus models and routes, minus a fixed penalty per invented file. Missing components redistribute their weight, so a route-less repo can still score 100. The model writes the feedback line and never touches the number.
-- **Tier 3** answers grade on **groundedness**: does the answer name the actual symbols and hit the key points? The scoring rule is the product's core incentive — *generic-but-correct must lose to specific-and-partial*. "Add caching" scores low; "cache in `getUserFeed`, but `POST /follow` doesn't know the cache exists" scores high. Ungradable answers (no API key) are excluded from the total rather than silently zeroed.
+- **Tier 3** answers grade on **groundedness**: does the answer name the actual symbols and hit the key points? The scoring rule is the product's core incentive - *generic-but-correct must lose to specific-and-partial*. "Add caching" scores low; "cache in `getUserFeed`, but `POST /follow` doesn't know the cache exists" scores high. Ungradable answers (no API key) are excluded from the total rather than silently zeroed.
 
 ### Sessions, sharing, ops
 
@@ -56,8 +56,8 @@ Interrogation-lamp amber on warm charcoal, Bricolage Grotesque / IBM Plex, dark-
 
 ## Status
 
-- ✅ **M0 — the Map** (guided tour, dependency graph, progressive render)
-- ✅ **M1 — the Grill** (question ladder, grading, verdict, share card) — *launch milestone*
+- ✅ **M0 - the Map** (guided tour, dependency graph, progressive render)
+- ✅ **M1 - the Grill** (question ladder, grading, verdict, share card) - *launch milestone*
 - ✅ **Deployed on Vercel** with Redis-backed jobs and sessions, per-IP rate limits, and live LLM calls
 - ✅ **Lesson deck, express path, browser-local streak, GitHub OAuth for private repos** (Aug 2026; spec in [docs/specs](./docs/specs))
 - ⏳ Next, in order: the pseudocode-to-code bridge, sandboxed problems scoped to your own repo, then the identity layer that makes streaks and a curriculum durable (BUILD_PLAN §10a)

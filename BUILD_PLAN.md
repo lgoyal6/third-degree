@@ -1,4 +1,4 @@
-# Build Plan — working title "Anti-larp"
+# Build Plan - working title "Anti-larp"
 
 > Hand this to Claude Code. Work through the milestones in order.
 > **M0 + M1 is the launch.** Everything after ships to real users, not toward a someday-launch.
@@ -7,7 +7,7 @@
 
 ## 0. Goal
 
-Users and community. Monetization is explicitly not a goal for v1 — no pricing page, no paywall thinking, no "premium tier" design debt. Success looks like: strangers posting their scores without being asked.
+Users and community. Monetization is explicitly not a goal for v1 - no pricing page, no paywall thinking, no "premium tier" design debt. Success looks like: strangers posting their scores without being asked.
 
 Hard deadline: **live by the first week of September 2026.** Fall internship/new-grad recruiting ramps through August–September; that is when "interview Thursday" panic peaks. Shipping in November misses the season.
 
@@ -15,7 +15,7 @@ Hard deadline: **live by the first week of September 2026.** Fall internship/new
 
 ## 1. What this is
 
-A platform that takes a repo you built (probably with heavy AI assistance) and grills you on it — then teaches you your own stack through it, ending with you able to defend the thing in an interview.
+A platform that takes a repo you built (probably with heavy AI assistance) and grills you on it - then teaches you your own stack through it, ending with you able to defend the thing in an interview.
 
 **The user:** has 10–30 repos. Shipped them fast. They work. They can't confidently explain the middleware, don't know why the ORM call is structured that way, and have an interview where someone will ask.
 
@@ -31,9 +31,9 @@ A platform that takes a repo you built (probably with heavy AI assistance) and g
 
 This section outranks everything below it, because the stated goal is users.
 
-**The share card is the growth loop.** "I scored 41% on a repo I 'built'" is ego-bait that screenshots itself onto X and r/csMajors. The card shows: score, repo name, language badges, one brutal sample question, and the URL. Auto-generated OG image so the link unfurls properly. This ships in M1 and gets real design time — it is the entire marketing plan.
+**The share card is the growth loop.** "I scored 41% on a repo I 'built'" is ego-bait that screenshots itself onto X and r/csMajors. The card shows: score, repo name, language badges, one brutal sample question, and the URL. Auto-generated OG image so the link unfurls properly. This ships in M1 and gets real design time - it is the entire marketing plan.
 
-**No-auth first touch.** Paste any public GitHub URL → get the map → get grilled → get a score. No signup, no OAuth, nothing. GitHub OAuth exists only for private repos and saving progress. Bonus loop: people can map and grill themselves on *other people's* repos — famous OSS projects, viral vibe-coded apps — which is shareable content in its own right.
+**No-auth first touch.** Paste any public GitHub URL → get the map → get grilled → get a score. No signup, no OAuth, nothing. GitHub OAuth exists only for private repos and saving progress. Bonus loop: people can map and grill themselves on *other people's* repos - famous OSS projects, viral vibe-coded apps - which is shareable content in its own right.
 
 **Launch sequence:**
 1. Build-in-public thread on X from day one (the map screenshots alone are content).
@@ -46,23 +46,23 @@ This section outranks everything below it, because the stated goal is users.
 
 Everything hangs off this ladder. A repo gets decomposed, then questions are generated at each rung, ascending. **Launch ships Layers 0–2 (plus static-analysis Layer 3 questions); Layers 4–5 come later.**
 
-**Layer 0 — Map** (no questions, pure orientation)
-Languages, frameworks, dependency list, entry points, routes, data model, "what this app does" in three sentences **plus a "how it's organized" walkthrough**. Split into **Frontend / Backend / Data / Infra**, then subdivided — under Backend: API routes, business logic, data access, auth, background jobs. Rendered as a guided tour that teaches before it tests: blurb first, then structure, then **an interactive dependency graph of every file and import** (the wiring diagram — hover to see blast radius visually), and only then the grill CTA. First-run magic moment; something must appear on screen in seconds (progressive render), the full map in under 90.
+**Layer 0 - Map** (no questions, pure orientation)
+Languages, frameworks, dependency list, entry points, routes, data model, "what this app does" in three sentences **plus a "how it's organized" walkthrough**. Split into **Frontend / Backend / Data / Infra**, then subdivided - under Backend: API routes, business logic, data access, auth, background jobs. Rendered as a guided tour that teaches before it tests: blurb first, then structure, then **an interactive dependency graph of every file and import** (the wiring diagram - hover to see blast radius visually), and only then the grill CTA. First-run magic moment; something must appear on screen in seconds (progressive render), the full map in under 90.
 
-**Layer 1 — Atoms** (language & framework literacy)
-Short questions on real snippets from their code. Not "what is async" — "here's your `getUser`, the `await` on line 12 is removed, what does the caller receive?" Language semantics, framework idioms and limits, and small algorithmic reasoning where their code actually contains it (the sort, the nested filter, the O(n²) lookup in the render loop).
+**Layer 1 - Atoms** (language & framework literacy)
+Short questions on real snippets from their code. Not "what is async" - "here's your `getUser`, the `await` on line 12 is removed, what does the caller receive?" Language semantics, framework idioms and limits, and small algorithmic reasoning where their code actually contains it (the sort, the nested filter, the O(n²) lookup in the render loop).
 
-**Layer 2 — Modules** (component-level)
+**Layer 2 - Modules** (component-level)
 Scoped to one category at a time. "Your API layer." Where does validation happen, where do errors get caught, what does this middleware do to the request object.
 
-**Layer 3 — Seams** (integration)
-Cross-module blast radius. "You rename this schema column — list every file that breaks." Auto-generated and auto-graded from the reference graph. This is where architecture begins and where most AI-built codebases are genuinely broken.
+**Layer 3 - Seams** (integration)
+Cross-module blast radius. "You rename this schema column - list every file that breaks." Auto-generated and auto-graded from the reference graph. This is where architecture begins and where most AI-built codebases are genuinely broken.
 
-**Layer 4 — System** (design defense)
-Scale pressure and tradeoffs applied to their real schema and real routes. "10k users, Postgres at 90% CPU, here's your feed query — go." Open-ended, graded on groundedness.
+**Layer 4 - System** (design defense)
+Scale pressure and tradeoffs applied to their real schema and real routes. "10k users, Postgres at 90% CPU, here's your feed query - go." Open-ended, graded on groundedness.
 
-**Layer 5 — Craft** (the "I didn't know that existed" layer)
-Concrete upgrades to what they built — UI techniques, accessibility, error and empty states, production hardening — each shipped as a *shown diff against their code*, not advice. The comeback layer.
+**Layer 5 - Craft** (the "I didn't know that existed" layer)
+Concrete upgrades to what they built - UI techniques, accessibility, error and empty states, production hardening - each shipped as a *shown diff against their code*, not advice. The comeback layer.
 
 ---
 
@@ -75,36 +75,36 @@ Concrete upgrades to what they built — UI techniques, accessibility, error and
 | Hints | None | Layered, on request | None |
 | Output | Score + share card | Progress, review cards | Shareable recording |
 
-Grill is Defend-lite: it exists at launch because it's the acquisition loop. Learn is the product people stay for — every missed Grill question is an on-ramp ("you got this wrong — want to actually understand it?"). Full Defend mode (timed, recorded, shareable session) is the polished endgame, not the starting point. Help and assessment never coexist in one mode — the companion destroys any timing signal.
+Grill is Defend-lite: it exists at launch because it's the acquisition loop. Learn is the product people stay for - every missed Grill question is an on-ramp ("you got this wrong - want to actually understand it?"). Full Defend mode (timed, recorded, shareable session) is the polished endgame, not the starting point. Help and assessment never coexist in one mode - the companion destroys any timing signal.
 
-**Grill questions climb from the ground up** (decided Jul 27, 2026): fundamentals first (the language/DSA constructs their code actually uses — the array chain, the await, the loop complexity), then function behavior, then modules (routes, models), then seams (blast radius). Never cold-open with a structural question — the user meets easy ground they can stand on, then the floor rises.
+**Grill questions climb from the ground up** (decided Jul 27, 2026): fundamentals first (the language/DSA constructs their code actually uses - the array chain, the await, the loop complexity), then function behavior, then modules (routes, models), then seams (blast radius). Never cold-open with a structural question - the user meets easy ground they can stand on, then the floor rises.
 
 ---
 
 ## 5. Grading substrate
 
-**Still the hardest part and the only defensible part — but the moat matters later; the magic matters now.** The rule stands: derive ground truth from the repo wherever possible, use the LLM to *phrase* questions, not to decide answers.
+**Still the hardest part and the only defensible part - but the moat matters later; the magic matters now.** The rule stands: derive ground truth from the repo wherever possible, use the LLM to *phrase* questions, not to decide answers.
 
-**Tier 1 — Semantic analysis (no LLM in the loop).**
-v1 is TypeScript-only, so use the **TypeScript compiler API** (or ts-morph), *not* tree-sitter. Tree-sitter gives syntax trees without resolved references — it cannot answer "what breaks if this changes." The TS compiler gives real reference resolution, call graphs, and type-aware breakage out of the box, and is less work than building a symbol table on tree-sitter. Blast-radius questions are auto-generated and auto-graded from this graph. (Tree-sitter enters later, when we go multi-language.)
+**Tier 1 - Semantic analysis (no LLM in the loop).**
+v1 is TypeScript-only, so use the **TypeScript compiler API** (or ts-morph), *not* tree-sitter. Tree-sitter gives syntax trees without resolved references - it cannot answer "what breaks if this changes." The TS compiler gives real reference resolution, call graphs, and type-aware breakage out of the box, and is less work than building a symbol table on tree-sitter. Blast-radius questions are auto-generated and auto-graded from this graph. (Tree-sitter enters later, when we go multi-language.)
 
-**Tier 2 — Git history mining (opportunistic only).**
-Pick a real feature commit, hide the diff, describe the feature in prose, ask which files change — the diff is the answer key. Inverted for bug-fix commits. **The thin repo is the default case, not the edge case:** the target user's repos have six commits, one of which is "initial commit" with 4,000 lines. Git mining activates silently when history supports it and never carries the experience. Gate on commit count and diff quality.
+**Tier 2 - Git history mining (opportunistic only).**
+Pick a real feature commit, hide the diff, describe the feature in prose, ask which files change - the diff is the answer key. Inverted for bug-fix commits. **The thin repo is the default case, not the edge case:** the target user's repos have six commits, one of which is "initial commit" with 4,000 lines. Git mining activates silently when history supports it and never carries the experience. Gate on commit count and diff quality.
 
-**Tier 3 — Groundedness scoring (LLM, constrained).**
-For open-ended answers, do not grade correctness. Extract the symbols the answer names, check them against the real symbol graph, and check whether they're the *relevant* ones. "Add caching" scores low. "Cache in `getUserFeed`, but `POST /follow` has to bust it and currently doesn't know the cache exists" scores high. **Generic-but-correct must lose to specific-and-partial.** That's the whole incentive design — do not compromise it.
+**Tier 3 - Groundedness scoring (LLM, constrained).**
+For open-ended answers, do not grade correctness. Extract the symbols the answer names, check them against the real symbol graph, and check whether they're the *relevant* ones. "Add caching" scores low. "Cache in `getUserFeed`, but `POST /follow` has to bust it and currently doesn't know the cache exists" scores high. **Generic-but-correct must lose to specific-and-partial.** That's the whole incentive design - do not compromise it.
 
 Target mix: 70% Tier 1+2, 30% Tier 3.
 
-**Every repo must yield something.** The readiness score, honestly computed, will tell most early users their repos are thin — frame it as "how interrogable is this repo," and guarantee even the thinnest repo produces a real map and a real grilling. The first impression must never be an insult.
+**Every repo must yield something.** The readiness score, honestly computed, will tell most early users their repos are thin - frame it as "how interrogable is this repo," and guarantee even the thinnest repo produces a real map and a real grilling. The first impression must never be an insult.
 
 ---
 
 ## 6. The companion
 
-A small persistent character, Learn mode only. Non-modal — never blocks the screen or steals focus. Persona suggestion: **a rubber duck.** Rubber-duck debugging, inverted — instead of you explaining your code to the duck, the duck asks you. Devs get the joke instantly.
+A small persistent character, Learn mode only. Non-modal - never blocks the screen or steals focus. Persona suggestion: **a rubber duck.** Rubber-duck debugging, inverted - instead of you explaining your code to the duck, the duck asks you. Devs get the joke instantly.
 
-**Trigger on struggle signals the product can actually observe** (this is a Q&A surface, not an editor — no edit-thrash or undo telemetry exists here):
+**Trigger on struggle signals the product can actually observe** (this is a Q&A surface, not an editor - no edit-thrash or undo telemetry exists here):
 - Two wrong attempts on one question
 - Long dwell on a question with no input
 - Answer started, deleted, restarted
@@ -137,15 +137,15 @@ The single biggest failure mode is looking like a dashboard. Nobody learns from 
 - **Answers are typed, never multiple choice** above Layer 1. Multiple choice is a tell that you're not really being tested.
 - **Responsive to mobile, `prefers-reduced-motion` respected.** The share card must look right *in* a phone screenshot.
 
-**Screens (the entire v1 surface — resist adding more):**
+**Screens (the entire v1 surface - resist adding more):**
 
-1. **Start** — one input (paste a repo URL), one secondary button (connect GitHub for private repos).
-2. **Map** — the Layer 0 breakdown, explorable, with "Start here" pointing at the recommended entry.
-3. **Session** — split view, question left-of-code, one primary button. (Companion docks bottom-right in Learn mode.)
-4. **Score** — the Grill result + share card. One screen, one share button.
-5. **Repo shelf** (auth'd users) — cards showing language, size, commit depth, readiness score. Sorted by readiness.
-6. **Review** (M2+) — what you got wrong, what's scheduled to come back.
-7. **Craft** (M5) — the upgrade list, each item a before/after diff.
+1. **Start** - one input (paste a repo URL), one secondary button (connect GitHub for private repos).
+2. **Map** - the Layer 0 breakdown, explorable, with "Start here" pointing at the recommended entry.
+3. **Session** - split view, question left-of-code, one primary button. (Companion docks bottom-right in Learn mode.)
+4. **Score** - the Grill result + share card. One screen, one share button.
+5. **Repo shelf** (auth'd users) - cards showing language, size, commit depth, readiness score. Sorted by readiness.
+6. **Review** (M2+) - what you got wrong, what's scheduled to come back.
+7. **Craft** (M5) - the upgrade list, each item a before/after diff.
 
 **Visual direction:** commit to one and be consistent. Avoid the current AI-design defaults (cream + serif display + terracotta; near-black + acid green; broadsheet hairline rules). Pick a display face and a body face that aren't the pairing every dev tool uses, set one signature element, keep everything else quiet.
 
@@ -165,15 +165,15 @@ ReviewCard    user_id, concept_tag, due_at, ease            — M4
 CraftItem     repo_id, category, before, after, rationale   — M5
 ```
 
-**Concepts are emergent in v1, not canonical.** No hand-curated ontology with prerequisites — that's weeks of taxonomy work v1 doesn't need. The LLM tags questions with free-form slugs (`stale-closure`, `n-plus-one`); dedupe and formalize later, when real data shows which concepts recur. Cross-repo resurfacing works fine on fuzzy tags.
+**Concepts are emergent in v1, not canonical.** No hand-curated ontology with prerequisites - that's weeks of taxonomy work v1 doesn't need. The LLM tags questions with free-form slugs (`stale-closure`, `n-plus-one`); dedupe and formalize later, when real data shows which concepts recur. Cross-repo resurfacing works fine on fuzzy tags.
 
 ---
 
 ## 9. Stack & infra
 
 - Next.js + TypeScript, Postgres (Supabase is fine)
-- **TypeScript compiler API / ts-morph** for the symbol and reference graph — not tree-sitter (v1 is TS-only; tree-sitter returns when other languages do), and never an LLM for structure extraction
-- **Indexing runs in a worker, not in request handlers.** `git clone --filter=blob:none` + parse happens on a small job runner (Fly/Railway box, or queue-fed background functions) — never inside a serverless request
+- **TypeScript compiler API / ts-morph** for the symbol and reference graph - not tree-sitter (v1 is TS-only; tree-sitter returns when other languages do), and never an LLM for structure extraction
+- **Indexing runs in a worker, not in request handlers.** `git clone --filter=blob:none` + parse happens on a small job runner (Fly/Railway box, or queue-fed background functions) - never inside a serverless request
 - Anthropic API for question phrasing, explanation, groundedness scoring, and craft suggestions
 - Cache aggressively per commit SHA; re-index only changed files
 - **Abuse controls from day one** (free product, LLM calls, arbitrary clones): repo size cap, blob-less shallow clones, N free maps per IP before requiring GitHub login, rate limits on grading calls
@@ -182,25 +182,25 @@ CraftItem     repo_id, category, before, after, rationale   — M5
 
 ## 10. Milestones
 
-**M0 — Map.** *Target: Aug 16, 2026.*
-Paste a public URL (no auth), clone, parse with the TS compiler, produce the Layer 0 breakdown, render it progressively — something in seconds, everything in under 90. GitHub OAuth for private repos. This alone is demoable and should feel like magic. Do not move on until it's fast.
+**M0 - Map.** *Target: Aug 16, 2026.*
+Paste a public URL (no auth), clone, parse with the TS compiler, produce the Layer 0 breakdown, render it progressively - something in seconds, everything in under 90. GitHub OAuth for private repos. This alone is demoable and should feel like magic. Do not move on until it's fast.
 
-**M1 — Grill + share card. This is launch.** *Target: live by Sept 4, 2026.*
-~10 questions per session from Layers 1–3 (snippets + blast radius from the graph), typed answers, a score, and a share card with a proper OG image. Show HN + X + Reddit the week it's stable. The bar: beta users share their score *without being asked*. If the questions are boring, nothing else matters — fix that before launching, not after.
+**M1 - Grill + share card. This is launch.** *Target: live by Sept 4, 2026.*
+~10 questions per session from Layers 1–3 (snippets + blast radius from the graph), typed answers, a score, and a share card with a proper OG image. Show HN + X + Reddit the week it's stable. The bar: beta users share their score *without being asked*. If the questions are boring, nothing else matters - fix that before launching, not after.
 
-**M2 — Learn mode.** *Through September.*
+**M2 - Learn mode.** *Through September.*
 Every missed Grill question becomes an on-ramp. Hint ladder (simplified triggers, §6), mistake review, mastery per concept-tag. Prove people come back the next day.
 
-**M3 — Grading substrate deepening.** *October.*
-Full reference graph coverage, git-history mining where history supports it, groundedness scoring for open-ended answers. This is the moat; give it real time — but it earns that time only after launch traffic proves the wedge.
+**M3 - Grading substrate deepening.** *October.*
+Full reference graph coverage, git-history mining where history supports it, groundedness scoring for open-ended answers. This is the moat; give it real time - but it earns that time only after launch traffic proves the wedge.
 
-**M4 — Companion & spaced repetition.** *October–November.*
+**M4 - Companion & spaced repetition.** *October–November.*
 The duck, the full escalation ladder, review cards resurfacing across sessions and repos.
 
-**M5 — System & Craft.** *November.*
+**M5 - System & Craft.** *November.*
 Layer 4 scale-pressure questions, Layer 5 upgrade diffs.
 
-**M6 — Full Defend + multi-repo.** *December — before spring interview season.*
+**M6 - Full Defend + multi-repo.** *December - before spring interview season.*
 Timed, unassisted, recorded, shareable session link. Portfolio view, cross-repo concept tracking, "I have an interview Thursday on these 4 repos" cram path.
 
 ---
@@ -242,18 +242,18 @@ Timed, unassisted, recorded, shareable session link. Portfolio view, cross-repo 
 
 ---
 
-## 12. Known risks — revisit at each milestone
+## 12. Known risks - revisit at each milestone
 
-1. **Boring questions kill the loop.** The share card only spreads if the grilling stings. This is the #1 risk at M1 — measure voluntary share rate from the first beta user.
+1. **Boring questions kill the loop.** The share card only spreads if the grilling stings. This is the #1 risk at M1 - measure voluntary share rate from the first beta user.
 2. **Motivation, not competition, is the threat.** You're selling back the understanding the user bought their way out of. Attach to the painful moment (interview Thursday, it broke, a real engineer criticized it); never market "learning."
 3. **Thin repos are the default case.** Six-commit 3k-line CRUD apps must get a great experience from static analysis alone. If the demo only shines on well-factored repos with rich history, it fails the actual audience.
 4. **The map is the whole first impression.** If it's slow or generic, nothing downstream matters.
-5. **Episodic use vs. community.** Interview prep churns by nature — someone crams Thursday, leaves Friday. Acceptable *if* the share loop replaces them; share rate is the metric that matters, not retention, until M2 gives people a reason to stay.
+5. **Episodic use vs. community.** Interview prep churns by nature - someone crams Thursday, leaves Friday. Acceptable *if* the share loop replaces them; share rate is the metric that matters, not retention, until M2 gives people a reason to stay.
 6. **Cost and abuse.** Free + LLM + clones from strangers. Controls in §9 ship with M0, not after the first incident.
-7. **Question repetition across similar repos.** Two users with similar Next.js apps getting near-identical questions collapses the personalization claim. Real risk, but deprioritized — users can't compare until there's a community. Revisit at M6.
+7. **Question repetition across similar repos.** Two users with similar Next.js apps getting near-identical questions collapses the personalization claim. Real risk, but deprioritized - users can't compare until there's a community. Revisit at M6.
 
 ---
 
 ## 13. Name
 
-**Decided Jul 27, 2026: Third Degree** — the interrogation idiom plus the burn pun; threatens the code, not the person. `thirddegree.dev` was available at decision time (register it). "Anti-larp" stays as the campaign hashtag/launch framing. Runners-up checked the same day: `antilarp.dev` and `repogrill.com` available, `getviva.dev` available; `viva.dev`, `stackproof.dev`, `ownit.dev`, `grillme.dev` taken.
+**Decided Jul 27, 2026: Third Degree** - the interrogation idiom plus the burn pun; threatens the code, not the person. `thirddegree.dev` was available at decision time (register it). "Anti-larp" stays as the campaign hashtag/launch framing. Runners-up checked the same day: `antilarp.dev` and `repogrill.com` available, `getviva.dev` available; `viva.dev`, `stackproof.dev`, `ownit.dev`, `grillme.dev` taken.
