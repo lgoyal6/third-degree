@@ -109,7 +109,7 @@ const HINT_SCHEMA = {
     focusStart: {
       type: "integer",
       description:
-        "First line of the region worth re-reading, in the line numbers of theirCode. 0 unless this rung is narrowing the region and there is code to point at.",
+        "First line of the region worth re-reading, using the numbers printed in theirCode.numberedCode. Must sit inside firstLine..lastLine and span at most 12 lines with focusEnd. Use 0 when this rung is not narrowing a region, when there is no code, or when you cannot point that tightly.",
     },
     focusEnd: {
       type: "integer",
@@ -133,11 +133,27 @@ function focusOf(
   const code = question.contextCode;
   if (rung !== 2 || !code || startLine <= 0 || endLine <= 0) return undefined;
   const first = code.startLine;
-  const last = code.startLine + code.code.split("\n").length - 1;
+  const total = code.code.split("\n").length;
+  const last = first + total - 1;
   const start = Math.max(first, Math.min(startLine, last));
   const end = Math.max(start, Math.min(endLine, last));
-  if (end - start + 1 > Math.max(4, Math.floor((last - first + 1) * 0.6))) return undefined;
+  // Twelve lines at most, and never more than 60% of what is on screen:
+  // highlighting most of the snippet points at nothing.
+  const maxSpan = Math.max(4, Math.min(12, Math.floor(total * 0.6)));
+  if (end - start + 1 > maxSpan) return undefined;
   return { startLine: start, endLine: end };
+}
+
+function numberedCode(question: GrillQuestion) {
+  const code = question.contextCode;
+  if (!code) return undefined;
+  const lines = code.code.split("\n");
+  return {
+    file: code.file,
+    firstLine: code.startLine,
+    lastLine: code.startLine + lines.length - 1,
+    numberedCode: lines.map((line, i) => `${code.startLine + i}: ${line}`).join("\n"),
+  };
 }
 
 export async function nextHint(
@@ -160,7 +176,7 @@ export async function nextHint(
         format: { type: "json_schema", schema: HINT_SCHEMA },
       },
       system:
-        "You are the duck in Third Degree: rubber-duck debugging inverted, so you ask rather than explain. Someone just got a question about their own code wrong and asked to work it out. You are on a fixed rung of a four-rung ladder and must not climb it early: giving the answer before rung 4 wastes the only chance they had to work it out. Keep it to two sentences, plain, no praise, no preamble. Never mention rungs, ladders, or that you are following rules.",
+        "You are the duck in Third Degree: rubber-duck debugging inverted, so you ask rather than explain. Line numbers you mention must come from theirCode.numberedCode, and on rung 2 the region you point at goes in focusStart and focusEnd as well as in your sentence. Someone just got a question about their own code wrong and asked to work it out. You are on a fixed rung of a four-rung ladder and must not climb it early: giving the answer before rung 4 wastes the only chance they had to work it out. Keep it to two sentences, plain, no praise, no preamble. Never mention rungs, ladders, or that you are following rules.",
       messages: [
         {
           role: "user",
@@ -171,7 +187,10 @@ export async function nextHint(
             passAtThisRung: pass,
             question: question.prompt,
             conceptTags: question.conceptTags,
-            theirCode: question.contextCode,
+            // Numbered, because the duck cites line numbers and cannot count
+            // reliably from a bare snippet — the last version pointed at a
+            // line that was not even on the candidate's screen.
+            theirCode: numberedCode(question),
             theCorrectAnswer: question.groundTruth.reveal,
             whatTheyJustSaid: said.slice(0, 2000),
             conversationSoFar: transcript.slice(-6),
