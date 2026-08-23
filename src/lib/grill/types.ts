@@ -60,6 +60,8 @@ export interface GrillSession {
    * coexist in one mode.
    */
   mode?: "learn";
+  /** Concepts the review queue asked to see again when this session started. */
+  reviewing?: string[];
   /**
    * Ladder rungs taken on a question before answering it, by question id. Only
    * Learn mode can produce these, and they are folded into the attempt's

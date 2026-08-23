@@ -8,7 +8,7 @@ import { buildImportGraph, type ImportGraph } from "../imports";
 import { buildSymbolGraph, type SymbolRef } from "../indexer/symbols";
 import { mentionsPath, mineCommit, pathWords, type MinedCommit } from "../indexer/history";
 import type { ContextCode, GrillQuestion } from "./types";
-import { KIND_TAGS, normalizeTags } from "../learn/tags";
+import { KIND_TAGS, kindsForTags, normalizeTags } from "../learn/tags";
 
 const CODE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 
@@ -359,7 +359,12 @@ const SNIPPET_QUESTIONS_SCHEMA = {
   additionalProperties: false,
 } as const;
 
-async function snippetQuestions(root: string, map: CodeMap, files: FileEntry[]): Promise<GrillQuestion[]> {
+async function snippetQuestions(
+  root: string,
+  map: CodeMap,
+  files: FileEntry[],
+  dueTags: string[],
+): Promise<GrillQuestion[]> {
   const candidates = files
     .filter(
       (f) =>
@@ -389,9 +394,19 @@ async function snippetQuestions(root: string, map: CodeMap, files: FileEntry[]):
       messages: [
         {
           role: "user",
-          content: snippets
-            .map((s) => `--- ${s.file} (from line ${s.startLine}) ---\n${s.code}`)
-            .join("\n\n"),
+          content: [
+            // §6: a mistake in one repo comes back from another. The concepts
+            // are asked for, never forced — a question about something this
+            // code does not do would be a worse question, not a review.
+            dueTags.length > 0
+              ? `This developer has missed these concepts elsewhere: ${dueTags.join(", ")}. If a snippet genuinely exercises one, make that its question and tag it with that exact slug. If none of them apply to this code, ignore them entirely.\n`
+              : "",
+            snippets
+              .map((s) => `--- ${s.file} (from line ${s.startLine}) ---\n${s.code}`)
+              .join("\n\n"),
+          ]
+            .filter(Boolean)
+            .join("\n"),
         },
       ],
     });
@@ -409,9 +424,15 @@ async function snippetQuestions(root: string, map: CodeMap, files: FileEntry[]):
         reveal: string;
       }[];
     };
-    // Ground up: all fundamentals before all behavior questions
+    // Ground up: all fundamentals before all behavior questions, and inside
+    // each group a question that answers a due concept goes first, since the
+    // session is capped and the resurfaced one is the one worth keeping.
+    const due = new Set(dueTags);
+    const returning = (tags: string[]) => (normalizeTags(tags ?? []).some((t) => due.has(t)) ? 0 : 1);
     const sorted = [...parsed.questions].sort(
-      (a, b) => (a.kind === "fundamental" ? 0 : 1) - (b.kind === "fundamental" ? 0 : 1),
+      (a, b) =>
+        (a.kind === "fundamental" ? 0 : 1) - (b.kind === "fundamental" ? 0 : 1) ||
+        returning(a.conceptTags) - returning(b.conceptTags),
     );
     return sorted.slice(0, 5).map((gq) =>
       q({
@@ -440,16 +461,18 @@ export async function generateQuestions(
   root: string,
   map: CodeMap,
   files: FileEntry[],
-  token?: string,
+  opts: { token?: string; dueTags?: string[] } = {},
 ): Promise<GrillQuestion[]> {
   const graph = buildImportGraph(root, files);
+  const dueTags = opts.dueTags ?? [];
+  const dueKinds = kindsForTags(dueTags);
 
   const callSites = callSiteQuestions(root, files, 2);
   // Both model calls at once: history mining adds a round trip that has no
   // reason to wait for the snippet writer.
   const [snippetSet, commits] = await Promise.all([
-    snippetQuestions(root, map, files),
-    commitQuestions(map, token),
+    snippetQuestions(root, map, files, dueTags),
+    commitQuestions(map, opts.token),
   ]);
   const [snippets, handlers, routeModels, imports, fieldRefs] = [
     snippetSet,
@@ -457,8 +480,13 @@ export async function generateQuestions(
     routeModelQuestions(root, map, graph),
     // Module-level imports are the weakest seam question now that the
     // reference graph and history answer the same thing with exact keys, so it
-    // yields its slots to them and to the schema rename.
-    importQuestions(root, graph, Math.max(0, 2 - callSites.length - commits.length)),
+    // yields its slots to them and to the schema rename — unless its own
+    // concept is the one due back, in which case it keeps one.
+    importQuestions(
+      root,
+      graph,
+      Math.max(dueKinds.includes("imports") ? 1 : 0, 2 - callSites.length - commits.length),
+    ),
     fieldRefQuestions(root, map, files),
   ];
 

@@ -7,7 +7,7 @@
 const MAX_TAGS = 3;
 const MAX_LEN = 40;
 
-export function normalizeTags(raw: (string | undefined | null)[]): string[] {
+export function normalizeTags(raw: (string | undefined | null)[], max = MAX_TAGS): string[] {
   const out: string[] = [];
   for (const value of raw) {
     const slug = (value ?? "")
@@ -19,7 +19,7 @@ export function normalizeTags(raw: (string | undefined | null)[]): string[] {
       .replace(/^-|-$/g, "");
     if (!slug || slug.length > MAX_LEN || out.includes(slug)) continue;
     out.push(slug);
-    if (out.length >= MAX_TAGS) break;
+    if (out.length >= max) break;
   }
   return out;
 }
@@ -38,3 +38,15 @@ export const KIND_TAGS: Record<string, string[]> = {
   "field-refs": ["schema-rename-blast-radius"],
   overview: ["system-overview"],
 };
+
+/**
+ * Which deterministic generators test a due concept. Resurfacing across repos
+ * (§6) needs this direction: the review queue holds slugs, and a slug has to
+ * turn back into a question the next repo can actually ask.
+ */
+export function kindsForTags(tags: string[]): string[] {
+  const wanted = new Set(tags);
+  return Object.entries(KIND_TAGS)
+    .filter(([, slugs]) => slugs.some((s) => wanted.has(s)))
+    .map(([kind]) => kind);
+}

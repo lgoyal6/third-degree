@@ -19,6 +19,12 @@ export interface Hint {
   rung: number;
   text: string;
   isAnswer: boolean;
+  /**
+   * Rung 2 is "narrow the region", and §6 asks for the region to be
+   * highlighted, not just named. Absent on every other rung, and absent when
+   * the question carries no code to point at.
+   */
+  focus?: { startLine: number; endLine: number };
 }
 
 const RUNG_RULE: Record<number, string> = {
@@ -100,10 +106,39 @@ const HINT_SCHEMA = {
       description:
         "Two sentences at most. Addressed to them as 'you'. Never states the answer unless the rung rule says to.",
     },
+    focusStart: {
+      type: "integer",
+      description:
+        "First line of the region worth re-reading, in the line numbers of theirCode. 0 unless this rung is narrowing the region and there is code to point at.",
+    },
+    focusEnd: {
+      type: "integer",
+      description: "Last line of that region, or 0 alongside focusStart 0.",
+    },
   },
-  required: ["hint"],
+  required: ["hint", "focusStart", "focusEnd"],
   additionalProperties: false,
 } as const;
+
+/**
+ * A region only counts if it is inside the snippet the candidate is looking at
+ * and is small enough to be a hint: the whole snippet highlighted says nothing.
+ */
+function focusOf(
+  question: GrillQuestion,
+  rung: number,
+  startLine: number,
+  endLine: number,
+): Hint["focus"] {
+  const code = question.contextCode;
+  if (rung !== 2 || !code || startLine <= 0 || endLine <= 0) return undefined;
+  const first = code.startLine;
+  const last = code.startLine + code.code.split("\n").length - 1;
+  const start = Math.max(first, Math.min(startLine, last));
+  const end = Math.max(start, Math.min(endLine, last));
+  if (end - start + 1 > Math.max(4, Math.floor((last - first + 1) * 0.6))) return undefined;
+  return { startLine: start, endLine: end };
+}
 
 export async function nextHint(
   question: GrillQuestion,
@@ -147,10 +182,19 @@ export async function nextHint(
     if (response.stop_reason === "refusal") return fallbackHint(question, rung, pass);
     const block = response.content.find((b) => b.type === "text");
     if (!block || block.type !== "text") return fallbackHint(question, rung, pass);
-    const parsed = JSON.parse(block.text) as { hint?: string };
+    const parsed = JSON.parse(block.text) as {
+      hint?: string;
+      focusStart?: number;
+      focusEnd?: number;
+    };
     const text = parsed.hint?.trim();
     if (!text) return fallbackHint(question, rung, pass);
-    return { rung, text, isAnswer: rung === RUNGS };
+    return {
+      rung,
+      text,
+      isAnswer: rung === RUNGS,
+      focus: focusOf(question, rung, parsed.focusStart ?? 0, parsed.focusEnd ?? 0),
+    };
   } catch {
     return fallbackHint(question, rung, pass);
   }

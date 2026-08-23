@@ -7,6 +7,10 @@ import { generateQuestions } from "@/lib/grill/generate";
 import { createSession, getSession, saveSession } from "@/lib/grill/store";
 import { checkLimit } from "@/lib/ratelimit";
 import { sessionToken } from "@/lib/auth/github";
+import { normalizeTags } from "@/lib/learn/tags";
+
+// Enough to carry a real backlog, few enough that the prompt stays a prompt.
+const MAX_DUE_TAGS = 12;
 
 // Question generation continues in `after()` once the response is sent.
 export const maxDuration = 300;
@@ -25,7 +29,10 @@ async function prepare(
     // have that commit extracted; otherwise this re-downloads it.
     const { root } = await fetchRepo(ref, userToken, job.map.sha);
     const { files } = walkRepo(root);
-    session.questions = await generateQuestions(root, job.map, files, userToken);
+    session.questions = await generateQuestions(root, job.map, files, {
+      token: userToken,
+      dueTags: session.reviewing,
+    });
     session.status = "ready";
     await saveSession(session);
   } catch (err) {
@@ -39,7 +46,7 @@ export async function POST(request: Request) {
   const limited = await checkLimit(request, "grill");
   if (limited) return limited;
 
-  let body: { jobId?: string; mode?: string };
+  let body: { jobId?: string; mode?: string; dueTags?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -61,6 +68,12 @@ export async function POST(request: Request) {
       private: meta.private,
     },
     mode: body.mode === "learn" ? ("learn" as const) : undefined,
+    // Concepts the browser says are due (§6 resurfacing). The queue lives on
+    // the client until identity does, so this arrives with the request rather
+    // than being read server-side.
+    reviewing: Array.isArray(body.dueTags)
+      ? normalizeTags(body.dueTags as (string | null | undefined)[], MAX_DUE_TAGS)
+      : undefined,
     frameworks: job.map.stack?.frameworks ?? [],
     modelNames: (job.map.models ?? []).map((m) => m.name),
     questions: [],

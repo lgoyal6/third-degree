@@ -7,6 +7,7 @@ import type { LessonCard } from "@/lib/types";
 import StreakBadge from "@/components/StreakBadge";
 import StatusLine from "@/components/StatusLine";
 import { DECK_POINTS, recordCompletion } from "@/lib/progress";
+import { dueTags } from "@/lib/review";
 
 interface Deck {
   lessons: LessonCard[];
@@ -31,7 +32,9 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
       const res = await fetch("/api/grill", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId, mode }),
+        // What the browser wants to see again, whatever repo it learned it in
+        // (§6). The queue is local, so the session has to be told.
+        body: JSON.stringify({ jobId, mode, dueTags: dueTags() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);

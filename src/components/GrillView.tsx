@@ -8,6 +8,7 @@ import { PASS_MARK, VERDICT_COPY, type Verdict } from "@/lib/grill/types";
 import StreakBadge from "@/components/StreakBadge";
 import StatusLine from "@/components/StatusLine";
 import HintLadder from "@/components/HintLadder";
+import Duck from "@/components/Duck";
 import ReviewLink from "@/components/ReviewLink";
 import { recordCompletion } from "@/lib/progress";
 import { dueTags, recordAnswer } from "@/lib/review";
@@ -40,6 +41,11 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
   const [returned, setReturned] = useState<string[]>([]);
   const [helping, setHelping] = useState(false); // ladder open on the live question
   const [nudge, setNudge] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
+  // Where rung 2 pointed. Kept after the ladder closes, since the region is
+  // still the thing worth looking at.
+  const [focus, setFocus] = useState<{ startLine: number; endLine: number } | null>(null);
+  const litLine = useRef<HTMLDivElement>(null);
   const hinted = useRef<Set<string>>(new Set());
   const typedAt = useRef<number>(0);
   const peak = useRef(0);
@@ -94,6 +100,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
         if (el && /^(INPUT|TEXTAREA)$/.test(el.tagName)) return;
         e.preventDefault();
         setNudge(null);
+        setCollapsed(false);
         setHelping(true);
       }
     };
@@ -106,6 +113,10 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     if (helping && state?.question) hinted.current.add(state.question.id);
   }, [helping, state?.question]);
+
+  useEffect(() => {
+    if (focus) litLine.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [focus]);
 
   // §6's dwell signal: sitting on a question with nothing on the page.
   useEffect(() => {
@@ -165,7 +176,9 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
     setShowAnswer(false);
     setReturned([]);
     setHelping(false);
+    setCollapsed(false);
     setNudge(null);
+    setFocus(null);
     typedAt.current = Date.now();
     peak.current = 0;
     scrubs.current = 0;
@@ -410,19 +423,32 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
             <p className="sticky top-0 z-10 border-b border-line bg-surface px-4 py-2 font-mono text-xs text-lamp">
               {q.contextCode.file}
             </p>
-            {/* Gutter numbers are the file's own lines, not a count from one */}
-            <div className="flex">
-              <div
-                aria-hidden
-                className="shrink-0 select-none border-r border-line px-3 py-4 text-right font-mono text-xs leading-relaxed text-ink-muted/40"
-              >
-                {q.contextCode.code.split("\n").map((_, i) => (
-                  <div key={i}>{(q.contextCode?.startLine ?? 1) + i}</div>
-                ))}
-              </div>
-              <pre className="overflow-x-auto px-4 py-4 font-mono text-xs leading-relaxed text-ink-muted">
-                {q.contextCode.code}
-              </pre>
+            {/* One row per line: gutter numbers are the file's own, and the
+                duck's rung 2 needs to point at a range rather than name it. */}
+            <div className="py-4 font-mono text-xs leading-relaxed">
+              {q.contextCode.code.split("\n").map((line, i) => {
+                const number = (q.contextCode?.startLine ?? 1) + i;
+                const lit = focus !== null && number >= focus.startLine && number <= focus.endLine;
+                return (
+                  <div
+                    key={i}
+                    ref={lit && number === focus.startLine ? litLine : undefined}
+                    className="flex w-max min-w-full"
+                  >
+                    <span
+                      aria-hidden
+                      className={`sticky left-0 z-10 w-12 shrink-0 select-none border-r bg-surface pr-3 text-right ${
+                        lit ? "border-lamp text-lamp" : "border-line text-ink-muted/40"
+                      }`}
+                    >
+                      {number}
+                    </span>
+                    <span className={`whitespace-pre px-4 ${lit ? "bg-lamp/10 text-ink" : "text-ink-muted"}`}>
+                      {line || " "}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -455,38 +481,17 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
             rows={q.kind === "overview" ? 12 : 7}
             className="w-full flex-none resize-none rounded-md border border-line bg-surface p-4 font-mono text-sm placeholder:text-ink-muted/50"
           />
-          {learn && (
-            <div className="flex flex-col gap-3">
-              {nudge && !helping && (
-                <div className="fade-up flex flex-wrap items-center justify-between gap-3 rounded-md border border-attention/40 bg-surface px-4 py-3">
-                  <p className="text-sm text-ink-muted">{NUDGE_COPY[nudge]}</p>
-                  <div className="flex shrink-0 items-center gap-3">
-                    <button
-                      onClick={() => setNudge(null)}
-                      className="cursor-pointer font-mono text-xs text-ink-muted hover:text-lamp"
-                    >
-                      not yet
-                    </button>
-                    <button
-                      onClick={() => {
-                        setNudge(null);
-                        setHelping(true);
-                      }}
-                      className="cursor-pointer rounded border border-lamp px-3 py-1.5 font-mono text-xs text-lamp hover:bg-lamp hover:text-bg"
-                    >
-                      talk it through
-                    </button>
-                  </div>
-                </div>
-              )}
-              {helping && (
-                <HintLadder
-                  sessionId={sessionId}
-                  questionId={q.id}
-                  onFinished={() => setHelping(false)}
-                  finishLabel="Back to the question ⏎"
-                />
-              )}
+          {learn && helping && (
+            // Kept mounted while collapsed: hiding the duck should not throw
+            // away the conversation you paid for in sentences.
+            <div className={collapsed ? "hidden" : ""}>
+              <HintLadder
+                sessionId={sessionId}
+                questionId={q.id}
+                onFinished={() => setHelping(false)}
+                finishLabel="Back to the question ⏎"
+                onFocus={setFocus}
+              />
             </div>
           )}
 
@@ -505,6 +510,20 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
         </div>
       </div>
       </main>
+      {learn && (
+        <Duck
+          nudge={nudge ? NUDGE_COPY[nudge] : null}
+          open={helping}
+          collapsed={collapsed}
+          onOpen={() => {
+            setNudge(null);
+            setCollapsed(false);
+            setHelping(true);
+          }}
+          onDismiss={() => setNudge(null)}
+          onToggle={() => setCollapsed((c) => !c)}
+        />
+      )}
     </>
   );
 }

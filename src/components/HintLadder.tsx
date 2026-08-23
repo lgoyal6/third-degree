@@ -20,12 +20,15 @@ export default function HintLadder({
   questionId,
   onFinished,
   finishLabel = "Next question ⏎",
+  onFocus,
 }: {
   sessionId: string;
   questionId: string;
   onFinished: () => void;
   /** Learn mode works the ladder on the live question, so finishing goes back to it. */
   finishLabel?: string;
+  /** Rung 2 narrows the region; the caller showing the code highlights it (§6). */
+  onFocus?: (focus: { startLine: number; endLine: number } | null) => void;
 }) {
   const [lines, setLines] = useState<Line[]>([]);
   const [rung, setRung] = useState(1);
@@ -63,6 +66,7 @@ export default function HintLadder({
         setLines([...withMine, { from: "duck", text: data.text }]);
         setPass(data.rung === rung ? pass + 1 : 1);
         setRung(data.rung);
+        onFocus?.(data.focus ?? null);
         if (data.isAnswer) setAnswered(true);
       } catch (err) {
         setError(err instanceof Error ? err.message : "The duck is stuck.");
@@ -71,7 +75,7 @@ export default function HintLadder({
         setTimeout(() => box.current?.focus(), 0);
       }
     },
-    [answered, busy, lines, pass, questionId, rung, said, sessionId],
+    [answered, busy, lines, onFocus, pass, questionId, rung, said, sessionId],
   );
 
   return (
