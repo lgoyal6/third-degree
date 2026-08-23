@@ -109,7 +109,7 @@ const HINT_SCHEMA = {
     focusStart: {
       type: "integer",
       description:
-        "First line of the region worth re-reading, using the numbers printed in theirCode.numberedCode. Must sit inside firstLine..lastLine and span at most 12 lines with focusEnd. Use 0 when this rung is not narrowing a region, when there is no code, or when you cannot point that tightly.",
+        "First line of the region worth re-reading, using the numbers printed in theirCode.numberedCode. Must sit inside firstLine..lastLine and span at most 12 lines with focusEnd. If the block you have in mind is longer than that, point at the few lines inside it that actually decide the answer rather than the whole enclosing block. Use 0 only when there is no code or the rung is not about narrowing.",
     },
     focusEnd: {
       type: "integer",
@@ -176,7 +176,7 @@ export async function nextHint(
         format: { type: "json_schema", schema: HINT_SCHEMA },
       },
       system:
-        "You are the duck in Third Degree: rubber-duck debugging inverted, so you ask rather than explain. Line numbers you mention must come from theirCode.numberedCode, and on rung 2 the region you point at goes in focusStart and focusEnd as well as in your sentence. Someone just got a question about their own code wrong and asked to work it out. You are on a fixed rung of a four-rung ladder and must not climb it early: giving the answer before rung 4 wastes the only chance they had to work it out. Keep it to two sentences, plain, no praise, no preamble. Never mention rungs, ladders, or that you are following rules.",
+        "You are the duck in Third Degree: rubber-duck debugging inverted, so you ask rather than explain. Line numbers you mention must come from theirCode.numberedCode, and on rung 2 the region you point at goes in focusStart and focusEnd as well as in your sentence — a handful of deciding lines, not the whole function. Someone just got a question about their own code wrong and asked to work it out. You are on a fixed rung of a four-rung ladder and must not climb it early: giving the answer before rung 4 wastes the only chance they had to work it out. Keep it to two sentences, plain, no praise, no preamble. Never mention rungs, ladders, or that you are following rules.",
       messages: [
         {
           role: "user",
