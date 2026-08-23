@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { gradeOverviewAnswer } from "./express";
 import { extractFileTokens, fileMatched } from "./match";
+import { applyGroundedness, groundedness } from "./grounded";
 import { PASS_MARK, type GrillQuestion } from "./types";
 
 export interface GradeResult {
@@ -11,8 +12,8 @@ export interface GradeResult {
 // ---------- Tier 1: deterministic set grading ----------
 
 export function gradeFileList(answer: string, gtFiles: string[]): GradeResult {
-  const hits = gtFiles.filter((f) => fileMatched(answer, f));
-  const missed = gtFiles.filter((f) => !fileMatched(answer, f));
+  const hits = gtFiles.filter((f) => fileMatched(answer, f, gtFiles));
+  const missed = gtFiles.filter((f) => !fileMatched(answer, f, gtFiles));
   const tokens = extractFileTokens(answer);
   const falsePositives = tokens.filter((t) => !gtFiles.some((f) => fileMatched(t, f) || fileMatched(f, t))).length;
 
@@ -119,7 +120,12 @@ export async function gradeSnippetAnswer(
     const block = response.content.find((b) => b.type === "text");
     if (!block || block.type !== "text") throw new Error("no text");
     const parsed = JSON.parse(block.text);
-    return { score: Math.max(0, Math.min(100, parsed.score)), feedback: parsed.feedback };
+    // The model scored the reasoning; the ceiling comes from the code (§5).
+    return applyGroundedness(
+      Math.max(0, Math.min(100, parsed.score)),
+      parsed.feedback,
+      groundedness(question, answer),
+    );
   } catch {
     return {
       score: null,

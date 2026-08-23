@@ -33,6 +33,7 @@ export const KIND_TAGS: Record<string, string[]> = {
   "route-handler": ["file-based-routing"],
   "route-models": ["route-data-flow"],
   imports: ["import-blast-radius"],
+  "call-sites": ["call-site-blast-radius"],
   "field-refs": ["schema-rename-blast-radius"],
   overview: ["system-overview"],
 };

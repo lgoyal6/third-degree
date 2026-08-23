@@ -4,6 +4,7 @@ export type QuestionKind =
   | "route-handler" // Layer 2 — which file handles this request
   | "route-models" // Layer 2 — which models does this route touch
   | "imports" // Layer 3 — blast radius via import graph
+  | "call-sites" // Layer 3 — blast radius of one symbol, via the reference graph
   | "field-refs" // Layer 3 — blast radius of a schema field rename
   | "overview"; // Layer 4 — describe the whole system, scored on groundedness
 

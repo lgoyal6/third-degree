@@ -5,6 +5,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { CodeMap } from "../types";
 import type { FileEntry } from "../indexer/walk";
 import { buildImportGraph, type ImportGraph } from "../imports";
+import { buildSymbolGraph, type SymbolRef } from "../indexer/symbols";
 import type { ContextCode, GrillQuestion } from "./types";
 import { KIND_TAGS, normalizeTags } from "../learn/tags";
 
@@ -37,6 +38,12 @@ function snippetOf(root: string, file: string, maxLines = 36): ContextCode {
   };
 }
 
+function snippetAt(root: string, file: string, line: number, maxLines = 26): ContextCode {
+  const lines = read(root, file).split("\n");
+  const start = Math.max(0, line - 3);
+  return { file, code: lines.slice(start, start + maxLines).join("\n"), startLine: start + 1 };
+}
+
 function q(partial: Omit<GrillQuestion, "id">): GrillQuestion {
   return {
     id: randomUUID(),
@@ -47,7 +54,7 @@ function q(partial: Omit<GrillQuestion, "id">): GrillQuestion {
 
 // ---------- Layer 3: import blast radius ----------
 
-function importQuestions(root: string, graph: ImportGraph): GrillQuestion[] {
+function importQuestions(root: string, graph: ImportGraph, max: number): GrillQuestion[] {
   const ranked = [...graph.importedBy.entries()]
     .filter(([file, users]) => users.size >= 3 && users.size <= 14 && !/components\/ui\//.test(file))
     .sort((a, b) => {
@@ -55,7 +62,7 @@ function importQuestions(root: string, graph: ImportGraph): GrillQuestion[] {
       const prefB = /(lib|server|db|auth|utils|services)\//.test(b[0]) ? 1 : 0;
       return prefB - prefA || b[1].size - a[1].size;
     })
-    .slice(0, 2);
+    .slice(0, max);
 
   return ranked.map(([file, users]) => {
     const files = [...users].sort();
@@ -68,6 +75,61 @@ function importQuestions(root: string, graph: ImportGraph): GrillQuestion[] {
       gradingTier: 1,
     });
   });
+}
+
+// ---------- Layer 3: call-site blast radius (symbol level) ----------
+
+/**
+ * §5 Tier 1 at symbol granularity. "Which files import this module" is a
+ * weaker question than "which files call this function": the import graph
+ * cannot tell a rename that breaks eleven call sites from one that breaks
+ * none, and the language service can.
+ */
+function callSiteQuestions(root: string, files: FileEntry[], max: number): GrillQuestion[] {
+  const graph = buildSymbolGraph(root, files);
+  const usable = graph
+    .filter(
+      (s) =>
+        s.files.length >= 2 &&
+        s.files.length <= 8 &&
+        // All-test callers make the answer a test-file listing exercise.
+        s.files.some((f) => !/\.(test|spec|stories)\./.test(f)),
+    )
+    .sort((a, b) => rank(b) - rank(a));
+
+  const out: GrillQuestion[] = [];
+  const seenFiles = new Set<string>();
+  for (const sym of usable) {
+    if (out.length >= max) break;
+    // One question per declaring file, so a session is not three questions
+    // about lib/db/queries.ts.
+    if (seenFiles.has(sym.file)) continue;
+    seenFiles.add(sym.file);
+    const noun = sym.kind === "function" ? "signature" : sym.kind === "class" ? "constructor" : "shape";
+    out.push(
+      q({
+        layer: 3,
+        kind: "call-sites",
+        prompt: `You're changing the ${noun} of \`${sym.name}\` in \`${sym.file}\`. Which files use it and have to change with it? List the file paths.`,
+        contextCode: snippetAt(root, sym.file, sym.line),
+        groundTruth: { files: sym.files, reveal: sym.files.join("\n") },
+        gradingTier: 1,
+      }),
+    );
+  }
+  return out;
+}
+
+/** Shared internals with a handful of callers make the sharpest question. */
+function rank(s: SymbolRef): number {
+  // Reference count contributes, but capped: past a point a longer answer is a
+  // memory test rather than a harder question.
+  let n = Math.min(s.refs, 12);
+  if (s.kind === "function") n += 6;
+  if (/(^|\/)(lib|server|db|core|services)\//.test(s.file)) n += 4;
+  if (s.files.length >= 3 && s.files.length <= 5) n += 3;
+  if (s.files.length > 6) n -= 4;
+  return n;
 }
 
 // ---------- Layer 3: schema field rename ----------
@@ -297,16 +359,31 @@ export async function generateQuestions(
 ): Promise<GrillQuestion[]> {
   const graph = buildImportGraph(root, files);
 
+  const callSites = callSiteQuestions(root, files, 2);
   const [snippets, handlers, routeModels, imports, fieldRefs] = [
     await snippetQuestions(root, map, files),
     routeHandlerQuestions(map),
     routeModelQuestions(root, map, graph),
-    importQuestions(root, graph),
+    // The reference graph answers the same seam question with sharper ground
+    // truth, so module-level imports step back to one when it produced any.
+    importQuestions(root, graph, callSites.length > 0 ? 1 : 2),
     fieldRefQuestions(root, map, files),
   ];
 
+  // §5's target mix is 70% derived-from-the-repo, 30% prose graded by a model.
+  // Ten questions with five snippets was an even split; the reference graph is
+  // what makes the deterministic side deep enough to carry seven.
+  const tier3 = snippets.slice(0, 3);
+
   // Ground up: fundamentals → functions → modules → seams (BUILD_PLAN §3)
-  const questions = [...snippets, ...handlers, ...routeModels, ...imports, ...fieldRefs].slice(0, 10);
+  const questions = [
+    ...tier3,
+    ...handlers,
+    ...routeModels,
+    ...callSites,
+    ...imports,
+    ...fieldRefs,
+  ].slice(0, 10);
 
   if (questions.length < 3) {
     throw new Error(

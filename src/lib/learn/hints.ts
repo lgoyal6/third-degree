@@ -86,6 +86,7 @@ const CONCEPT: Record<GrillQuestion["kind"], string> = {
   "route-handler": "This is about how the framework maps a request path to a file on disk.",
   "route-models": "This is about which data a route touches once you follow what it imports.",
   imports: "This is about blast radius: changing an export changes every file that imports it.",
+  "call-sites": "This is about following one symbol outwards: a signature is a contract with every place that calls it.",
   "field-refs": "This is about a rename propagating everywhere the old name was referenced.",
   overview: "This is about whether your description of the system matches the graph the code actually forms.",
 };
