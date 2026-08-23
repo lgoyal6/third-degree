@@ -128,6 +128,8 @@ export interface CodeMap {
   summary?: MapSummary;
   lessons?: LessonCard[];
   craft?: CraftItem[];
+  /** Commits on the default branch, when the API would say (§7's shelf). */
+  commitDepth?: number | null;
 }
 
 export interface MapJob {

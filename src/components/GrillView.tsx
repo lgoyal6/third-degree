@@ -326,7 +326,10 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
     const missed = last.score === null || last.score < PASS_MARK;
     return (
       <>
-      <StatusLine repo={`${state.repo.owner}/${state.repo.name}`} branch={state.repo.defaultBranch}>
+      <StatusLine
+        repo={graded?.repo ?? `${state.repo.owner}/${state.repo.name}`}
+        branch={state.cram ? `cram · ${state.cram.length} repos` : state.repo.defaultBranch}
+      >
         <span className="text-ink-muted">graded</span>
         <StreakBadge />
       </StatusLine>
@@ -426,7 +429,12 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
 
   return (
     <>
-      <StatusLine repo={`${state.repo.owner}/${state.repo.name}`} branch={state.repo.defaultBranch}>
+      {/* A cram session spans repos, so the title bar follows the question
+          rather than the session (§10's cram path). */}
+      <StatusLine
+        repo={q.repo ?? `${state.repo.owner}/${state.repo.name}`}
+        branch={state.cram ? `cram · ${state.cram.length} repos` : state.repo.defaultBranch}
+      >
         <span className="text-lamp">{LAYER_LABEL[q.layer]}</span>
         <StreakBadge />
         {learn ? (
@@ -751,6 +759,9 @@ function ScoreScreen({ state }: { state: ViewState }) {
                   </span>
                 </span>
               </div>
+              {a.repo && state.cram && (
+                <p className="mt-2 font-mono text-[11px] text-lamp">{a.repo}</p>
+              )}
               <p className="mt-2 font-mono text-xs text-ink-muted">you said: {a.answer}</p>
               <p className="mt-2 text-xs text-ink-muted">{a.feedback}</p>
               <div className="mt-3">

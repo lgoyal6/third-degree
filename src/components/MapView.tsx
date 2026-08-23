@@ -7,6 +7,7 @@ import type { CategoryNode, MapJob, RouteInfo, Stage } from "@/lib/types";
 import DepGraph from "@/components/DepGraph";
 import StreakBadge from "@/components/StreakBadge";
 import StatusLine from "@/components/StatusLine";
+import { remember } from "@/lib/shelf";
 
 const STAGE_LABELS: [Stage, string][] = [
   ["meta", "Finding the repo"],
@@ -65,6 +66,10 @@ export default function MapView({ jobId }: { jobId: string }) {
         const data: MapJob = await res.json();
         setJob(data);
         if (data.stage === "done" || data.stage === "error") stop();
+        // The shelf is what makes a second repo worth mapping (§7 screen 5).
+        if (data.stage === "done" && data.map?.meta) {
+          remember(jobId, `${data.map.meta.owner}/${data.map.meta.name}`);
+        }
       } catch {
         // transient network error — keep polling
       }

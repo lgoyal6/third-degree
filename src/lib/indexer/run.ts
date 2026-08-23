@@ -7,6 +7,7 @@ import { categorize, extractEntryPoints, extractRoutes } from "./structure";
 import { buildDepGraph } from "./graph";
 import { extractDataModel } from "./datamodel";
 import { summarize } from "./summary";
+import { countCommits } from "./history";
 import { getJob } from "../jobs";
 
 const FILE_PATH_CAP = 1500;
@@ -50,7 +51,10 @@ export async function runIndex(jobId: string, url: string, userToken?: string): 
     await updateJob(jobId, "schema", { routes, entryPoints, categories, graph });
 
     const models = extractDataModel(root, files);
-    await updateJob(jobId, "summary", { models });
+    // One request, and §7's shelf wants it: a repo six commits deep is a
+    // different proposition from one with four hundred.
+    const commitDepth = await countCommits(ref, userToken);
+    await updateJob(jobId, "summary", { models, commitDepth });
 
     const summary = await summarize((await getJob(jobId))?.map ?? {});
     await updateJob(jobId, "done", { summary });

@@ -35,6 +35,8 @@ export interface GrillQuestion {
   groundTruth: GroundTruth;
   gradingTier: 1 | 3;
   conceptTags?: string[]; // emergent, free-form (BUILD_PLAN §8)
+  /** owner/name, set only on cram sessions, which span repos. */
+  repo?: string;
 }
 
 export interface Attempt {
@@ -68,6 +70,8 @@ export interface GrillSession {
   askedAt?: number;
   /** The map this session was built from, so the verdict can link on to Craft. */
   jobId?: string;
+  /** §10's cram path: the maps this session draws from, when it is more than one. */
+  cram?: string[];
   /** Concepts the review queue asked to see again when this session started. */
   reviewing?: string[];
   /**

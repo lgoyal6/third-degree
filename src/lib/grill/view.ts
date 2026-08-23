@@ -22,11 +22,14 @@ export interface GrillView {
   finished: boolean;
   score?: number;
   verdict?: GrillSession["verdict"];
+  cram?: string[];
   question: {
     id: string;
     layer: number;
     kind: string;
     prompt: string;
+    /** Which repo this question came from, on a cram session. */
+    repo?: string;
     contextCode?: { file: string; code: string; startLine: number };
   } | null;
   answered: {
@@ -34,6 +37,7 @@ export interface GrillView {
     prompt: string;
     conceptTags: string[];
     layer: number;
+    repo?: string;
     answer: string;
     score: number | null;
     feedback: string;
@@ -55,6 +59,7 @@ export function publicView(session: GrillSession): GrillView {
     status: session.status,
     mode: session.mode ?? "grill",
     jobId: session.jobId,
+    cram: session.cram,
     now: Date.now(),
     askedAt: session.mode === "defend" ? session.askedAt : undefined,
     limitMs: session.mode === "defend" && current ? limitFor(current.layer) : undefined,
@@ -72,6 +77,7 @@ export function publicView(session: GrillSession): GrillView {
           layer: current.layer,
           kind: current.kind,
           prompt: current.prompt,
+          repo: current.repo,
           contextCode: current.contextCode,
         }
       : null,
@@ -85,6 +91,7 @@ export function publicView(session: GrillSession): GrillView {
       return {
         id: question?.id ?? "",
         prompt: question?.prompt ?? "",
+        repo: question?.repo,
         // Only on answered questions — on a live one a tag can restate the answer.
         conceptTags: sealed ? [] : question?.conceptTags ?? [],
         layer: question?.layer ?? 1,

@@ -150,3 +150,26 @@ export function mentionsPath(description: string, files: string[]): boolean {
     .trim()} `;
   return pathWords(files).some((word) => haystack.includes(` ${word} `));
 }
+
+/**
+ * How many commits deep the default branch is. §7's repo shelf wants it, and
+ * §5 gates git mining on it: one page of one commit plus the Link header is the
+ * cheapest way GitHub will tell you.
+ */
+export async function countCommits(ref: RepoRef, token?: string): Promise<number | null> {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${ref.owner}/${ref.repo}/commits?per_page=1`,
+      { headers: headers(token), signal: AbortSignal.timeout(12_000) },
+    );
+    if (!res.ok) return null;
+    const link = res.headers.get("link") ?? "";
+    const last = /[?&]page=(\d+)>;\s*rel="last"/.exec(link);
+    if (last) return Number(last[1]);
+    // No pagination header means the whole history fits on this page.
+    const body = (await res.json()) as unknown[];
+    return Array.isArray(body) ? body.length : null;
+  } catch {
+    return null;
+  }
+}
