@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { GrillView as ViewState } from "@/lib/grill/view";
-import { VERDICT_COPY, type Verdict } from "@/lib/grill/types";
+import { PASS_MARK, VERDICT_COPY, type Verdict } from "@/lib/grill/types";
 import StreakBadge from "@/components/StreakBadge";
 import StatusLine from "@/components/StatusLine";
 import HintLadder from "@/components/HintLadder";
@@ -159,7 +159,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
     const lastLayer = graded?.layer ?? 1;
     const gradedId = graded?.id ?? "";
     // "Missed" is the on-ramp trigger (§4): below the passing band, or ungraded.
-    const missed = last.score === null || last.score < 60;
+    const missed = last.score === null || last.score < PASS_MARK;
     return (
       <>
       <StatusLine repo={`${state.repo.owner}/${state.repo.name}`} branch={state.repo.defaultBranch}>

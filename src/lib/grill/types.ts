@@ -70,6 +70,13 @@ export interface GrillSession {
   createdAt: number;
 }
 
+/**
+ * The passing band, shared by the grader, the on-ramp trigger and the review
+ * queue. It lived as a literal 60 in all three, which is how the graders ended
+ * up revealing answers on questions the on-ramp was about to offer to teach.
+ */
+export const PASS_MARK = 60;
+
 export function verdictFor(score: number): Verdict {
   if (score >= 80) return "well-done";
   if (score >= 60) return "medium";

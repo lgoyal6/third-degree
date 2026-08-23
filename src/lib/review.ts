@@ -6,6 +6,8 @@
  * layer lands (§10a).
  */
 
+import { PASS_MARK } from "@/lib/grill/types";
+
 export interface ReviewCard {
   tag: string;
   attempts: number;
@@ -27,8 +29,6 @@ const PROMPT_CAP = 200;
 const REPO_CAP = 4;
 
 export const REVIEW_EVENT = "td:review";
-/** The passing band the grader itself uses. Below it is a miss. */
-export const PASS_MARK = 60;
 
 // Leitner-style fixed steps rather than SM-2 ease factors: one browser's worth
 // of history is not enough data to fit a per-card ease to, and pretending

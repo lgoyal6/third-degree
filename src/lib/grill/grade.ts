@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { gradeOverviewAnswer } from "./express";
 import { extractFileTokens, fileMatched } from "./match";
-import type { GrillQuestion } from "./types";
+import { PASS_MARK, type GrillQuestion } from "./types";
 
 export interface GradeResult {
   score: number | null; // null = grading unavailable; excluded from the total
@@ -22,16 +22,35 @@ export function gradeFileList(answer: string, gtFiles: string[]): GradeResult {
   const score = Math.round(f1 * 100);
 
   let feedback = `You named ${hits.length} of ${gtFiles.length} affected files.`;
-  if (missed.length > 0) feedback += ` Missed: ${missed.slice(0, 5).join(", ")}${missed.length > 5 ? "…" : ""}.`;
+  // Listing what you missed IS the answer to a blast-radius question, and the
+  // interstitial offers to walk you to it right underneath. Below the pass mark
+  // the feedback gives a count and a direction and leaves the rest to the
+  // ladder; above it, you have shown you know the area, so names are useful.
+  if (missed.length > 0) {
+    feedback +=
+      score >= PASS_MARK
+        ? ` Missed: ${missed.slice(0, 5).join(", ")}${missed.length > 5 ? "…" : ""}.`
+        : ` ${missed.length} more ${missed.length === 1 ? "is" : "are"} ${areaHint(missed)}.`;
+  }
   if (falsePositives > 0) feedback += ` ${falsePositives} file${falsePositives === 1 ? "" : "s"} you named ${falsePositives === 1 ? "isn't" : "aren't"} actually affected.`;
   return { score, feedback };
+}
+
+/** Where the misses live, at directory granularity: a direction, not the answer. */
+function areaHint(files: string[]): string {
+  const roots = [...new Set(files.map((f) => (f.includes("/") ? `${f.split("/")[0]}/` : "the repo root")))];
+  if (roots.length === 1) return `in ${roots[0]}`;
+  if (roots.length === 2) return `in ${roots[0]} and ${roots[1]}`;
+  return `spread across ${roots.length} places`;
 }
 
 export function gradeSingleFile(answer: string, file: string): GradeResult {
   const hit = fileMatched(answer, file);
   return {
     score: hit ? 100 : 0,
-    feedback: hit ? "Dead on." : `That request lands in ${file}.`,
+    // A miss here is exactly one file wide, so there is no partial credit to
+    // explain and nothing to say that isn't the answer itself.
+    feedback: hit ? "Dead on." : "Not the file this URL maps to.",
   };
 }
 
@@ -45,7 +64,10 @@ export function gradeNameSet(answer: string, names: string[], allNames: string[]
   const score = Math.max(0, Math.round(recall * 100 - wrong.length * 15));
   const missed = names.filter((n) => !hits.includes(n));
   let feedback = `You got ${hits.length} of ${names.length} models.`;
-  if (missed.length > 0) feedback += ` Missed: ${missed.join(", ")}.`;
+  if (missed.length > 0) {
+    feedback +=
+      score >= PASS_MARK ? ` Missed: ${missed.join(", ")}.` : ` ${missed.length} more to find.`;
+  }
   if (wrong.length > 0) feedback += ` ${wrong.join(", ")} ${wrong.length === 1 ? "isn't" : "aren't"} touched by this route.`;
   return { score, feedback };
 }
@@ -76,7 +98,7 @@ export async function gradeSnippetAnswer(
         format: { type: "json_schema", schema: GRADE_SCHEMA },
       },
       system:
-        "You grade answers for Third Degree. Grading rule: generic-but-correct must LOSE to specific-and-partial. An answer that names the actual functions and variables involved (the key symbols) and hits the key points scores high; a vague answer that is technically true but could describe any codebase caps at 40. An answer that is wrong about the code scores under 20. Be fair to partial understanding expressed in plain words.",
+        "You grade answers for Third Degree. Grading rule: generic-but-correct must LOSE to specific-and-partial. An answer that names the actual functions and variables involved (the key symbols) and hits the key points scores high; a vague answer that is technically true but could describe any codebase caps at 40. An answer that is wrong about the code scores under 20. Be fair to partial understanding expressed in plain words. Feedback rule: when you score below 60, name what the answer failed to address but never state the correct answer or the missing detail itself — the product then offers to walk the candidate to it, and feedback that gives it away wastes that. At 60 and above you may be explicit.",
       messages: [
         {
           role: "user",
