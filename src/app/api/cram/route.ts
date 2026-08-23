@@ -45,21 +45,33 @@ async function prepare(sessionId: string, jobIds: string[], token?: string) {
       throw new Error("None of those maps produced questions. Map them again and retry.");
     }
 
-    // Round-robin inside each layer: the ladder still climbs, but consecutive
-    // questions come from different repos, which is the point of cramming.
-    const interleaved: GrillQuestion[] = [];
-    for (const layer of [1, 2, 3, 4]) {
-      const byRepo = perRepo.map((set) => set.filter((q) => q.layer === layer));
-      for (let i = 0; interleaved.length < MAX_QUESTIONS; i++) {
-        const round = byRepo.map((set) => set[i]).filter(Boolean);
-        if (round.length === 0) break;
-        for (const q of round) {
-          if (interleaved.length < MAX_QUESTIONS) interleaved.push(q);
+    // A budget per layer, then round-robin across repos inside each one: the
+    // ladder still climbs and consecutive questions come from different
+    // codebases, which is the point of cramming. Without the budget the cap
+    // filled up on fundamentals and the seams never came.
+    const byLayer = [1, 2, 3, 4].map((layer) =>
+      perRepo.map((set) => set.filter((q) => q.layer === layer)),
+    );
+    const quota = Math.max(1, Math.floor(MAX_QUESTIONS / byLayer.length));
+    const take = (sets: GrillQuestion[][], limit: number, into: GrillQuestion[]) => {
+      for (let i = 0; into.length < MAX_QUESTIONS; i++) {
+        const round = sets.map((set) => set[i]).filter(Boolean);
+        if (round.length === 0) return;
+        for (const question of round) {
+          if (into.length >= MAX_QUESTIONS || into.filter((q) => q.layer === question.layer).length >= limit) {
+            continue;
+          }
+          into.push(question);
         }
       }
-    }
+    };
 
-    session.questions = interleaved;
+    const interleaved: GrillQuestion[] = [];
+    for (const sets of byLayer) take(sets, quota, interleaved);
+    // Whatever the thin layers left unspent goes to the layers that had more.
+    for (const sets of byLayer) take(sets, MAX_QUESTIONS, interleaved);
+
+    session.questions = [...new Set(interleaved)].sort((a, b) => a.layer - b.layer);
     session.modelNames = [...new Set(session.modelNames)];
     session.status = "ready";
     session.askedAt = Date.now();
