@@ -60,9 +60,17 @@ function kindOf(decl: Node): SymbolRef["kind"] | null {
   return null;
 }
 
-export function buildSymbolGraph(root: string, files: FileEntry[]): SymbolRef[] {
+/** A parsed repo, shared by everything that needs the language service. */
+export interface RepoProject {
+  project: Project;
+  sources: SourceFile[];
+  /** Absolute path back to the repo-relative one. */
+  rel: (abs: string) => string;
+}
+
+export function openProject(root: string, files: FileEntry[]): RepoProject | null {
   const code = files.filter(isCode);
-  if (code.length === 0 || code.length > MAX_PROJECT_FILES) return [];
+  if (code.length === 0 || code.length > MAX_PROJECT_FILES) return null;
 
   const tsconfig = ["tsconfig.json", "jsconfig.json"]
     .map((f) => path.join(root, f))
@@ -79,7 +87,7 @@ export function buildSymbolGraph(root: string, files: FileEntry[]): SymbolRef[] 
       compilerOptions: { allowJs: true, skipLibCheck: true, noEmit: true },
     });
   } catch {
-    return []; // unreadable tsconfig
+    return null; // unreadable tsconfig
   }
 
   const sources: SourceFile[] = [];
@@ -90,9 +98,23 @@ export function buildSymbolGraph(root: string, files: FileEntry[]): SymbolRef[] 
       // unreadable or unparseable file: it simply is not in the graph
     }
   }
-  if (sources.length === 0) return [];
+  if (sources.length === 0) return null;
 
-  const rel = (abs: string) => path.relative(root, abs).split(path.sep).join("/");
+  return {
+    project,
+    sources,
+    rel: (abs: string) => path.relative(root, abs).split(path.sep).join("/"),
+  };
+}
+
+export function buildSymbolGraph(
+  root: string,
+  files: FileEntry[],
+  opened?: RepoProject | null,
+): SymbolRef[] {
+  const repo = opened === undefined ? openProject(root, files) : opened;
+  if (!repo) return [];
+  const { project, sources, rel } = repo;
   const service = project.getLanguageService();
   const started = Date.now();
   const out: SymbolRef[] = [];

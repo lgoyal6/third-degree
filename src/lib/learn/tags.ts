@@ -35,6 +35,7 @@ export const KIND_TAGS: Record<string, string[]> = {
   imports: ["import-blast-radius"],
   "call-sites": ["call-site-blast-radius"],
   "commit-scope": ["change-surface"],
+  scale: ["scale-pressure"],
   "field-refs": ["schema-rename-blast-radius"],
   overview: ["system-overview"],
 };

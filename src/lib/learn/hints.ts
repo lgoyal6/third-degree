@@ -94,6 +94,7 @@ const CONCEPT: Record<GrillQuestion["kind"], string> = {
   imports: "This is about blast radius: changing an export changes every file that imports it.",
   "call-sites": "This is about following one symbol outwards: a signature is a contract with every place that calls it.",
   "commit-scope": "This is about where a feature actually lives: a change described in one sentence still lands in a specific handful of files.",
+  scale: "This is about what changes when the numbers change: the same code, a thousand times the rows or the requests.",
   "field-refs": "This is about a rename propagating everywhere the old name was referenced.",
   overview: "This is about whether your description of the system matches the graph the code actually forms.",
 };

@@ -6,6 +6,7 @@ export type QuestionKind =
   | "imports" // Layer 3 — blast radius via import graph
   | "call-sites" // Layer 3 — blast radius of one symbol, via the reference graph
   | "commit-scope" // Layer 3 — which files a described change touched, from history
+  | "scale" // Layer 4 — pressure applied to a hot path the AST found
   | "field-refs" // Layer 3 — blast radius of a schema field rename
   | "overview"; // Layer 4 — describe the whole system, scored on groundedness
 

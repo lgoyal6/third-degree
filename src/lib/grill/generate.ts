@@ -5,7 +5,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { CodeMap } from "../types";
 import type { FileEntry } from "../indexer/walk";
 import { buildImportGraph, type ImportGraph } from "../imports";
-import { buildSymbolGraph, type SymbolRef } from "../indexer/symbols";
+import { buildSymbolGraph, openProject, type RepoProject, type SymbolRef } from "../indexer/symbols";
+import { findHotspots, type Hotspot } from "../indexer/hotspots";
 import { mentionsPath, mineCommit, pathWords, type MinedCommit } from "../indexer/history";
 import type { ContextCode, GrillQuestion } from "./types";
 import { KIND_TAGS, kindsForTags, normalizeTags } from "../learn/tags";
@@ -86,8 +87,13 @@ function importQuestions(root: string, graph: ImportGraph, max: number): GrillQu
  * cannot tell a rename that breaks eleven call sites from one that breaks
  * none, and the language service can.
  */
-function callSiteQuestions(root: string, files: FileEntry[], max: number): GrillQuestion[] {
-  const graph = buildSymbolGraph(root, files);
+function callSiteQuestions(
+  root: string,
+  files: FileEntry[],
+  max: number,
+  repo: RepoProject | null,
+): GrillQuestion[] {
+  const graph = buildSymbolGraph(root, files, repo);
   const usable = graph
     .filter(
       (s) =>
@@ -455,6 +461,63 @@ async function snippetQuestions(
   }
 }
 
+// ---------- Layer 4: scale pressure on a real hot path ----------
+
+/**
+ * §3's Layer 4: "10k users, Postgres at 90% CPU, here's your feed query — go."
+ * The pressure is scripted, but the target is not: the AST found this loop or
+ * this unbounded read in their code, so the question cannot be answered from
+ * general knowledge about scaling. Graded on groundedness like any open answer.
+ */
+const SCALE: Record<
+  Hotspot["kind"],
+  { ask: (h: Hotspot) => string; keyPoints: string[]; reveal: string; tags: string[] }
+> = {
+  "await-in-loop": {
+    ask: (h) =>
+      `Your traffic goes from a handful of users to 10,000 at once. \`${h.fnName}\` in \`${h.file}\` awaits inside a loop — one round trip per iteration, at line ${h.line}. What gives out first, and what do you change in this function?`,
+    keyPoints: [
+      "one round trip per iteration, so the time grows with the size of the collection",
+      "connections or sockets saturate as soon as requests overlap, before CPU does",
+      "the fix is one call for the whole set — a join or a batched IN — or bounded concurrency when the calls genuinely cannot be batched",
+    ],
+    reveal:
+      "Every iteration waits for its own round trip, so this function's latency grows linearly with the collection and the pool behind it saturates the moment requests overlap: at 10k concurrent you run out of connections long before you run out of CPU. Fetch the whole set in one call — a join, or a batched IN query — and where the calls truly cannot be batched, run them together with a bounded concurrency instead of one at a time.",
+    tags: ["n-plus-one"],
+  },
+  "unbounded-query": {
+    ask: (h) =>
+      `The table behind \`${h.fnName}\` in \`${h.file}\` grows to two million rows. The read at line ${h.line} has no limit on it. Walk through what happens to one request and to the process, and say what you change here.`,
+    keyPoints: [
+      "every matching row is read, serialized and held in memory for the request",
+      "latency and heap grow with the largest row set, not the average one",
+      "the fix is a limit with keyset pagination on an indexed column, and a hard cap at the handler",
+    ],
+    reveal:
+      "The whole result set is read, serialized and held for the life of the request, so both latency and heap grow with your biggest row set rather than your typical one — the process dies on the busiest chat or the oldest account, not on the average. Put a limit on it with keyset pagination over an indexed column, cap the page size at the handler so a caller cannot ask for everything, and make sure the column you filter on is actually indexed.",
+    tags: ["unbounded-query"],
+  },
+};
+
+function scaleQuestions(root: string, hotspots: Hotspot[], max: number): GrillQuestion[] {
+  return hotspots.slice(0, max).map((h) => {
+    const copy = SCALE[h.kind];
+    return q({
+      layer: 4,
+      kind: "scale",
+      prompt: copy.ask(h),
+      contextCode: snippetAt(root, h.file, h.fnStartLine, 24),
+      conceptTags: copy.tags,
+      groundTruth: {
+        keyPoints: copy.keyPoints,
+        keySymbols: h.symbols,
+        reveal: copy.reveal,
+      },
+      gradingTier: 3,
+    });
+  });
+}
+
 // ---------- Assembly ----------
 
 export async function generateQuestions(
@@ -467,7 +530,14 @@ export async function generateQuestions(
   const dueTags = opts.dueTags ?? [];
   const dueKinds = kindsForTags(dueTags);
 
-  const callSites = callSiteQuestions(root, files, 2);
+  // One parse, two readers: the reference graph and the hot-path scan.
+  const repo = openProject(root, files);
+  const callSites = callSiteQuestions(root, files, 2, repo);
+  const scale = scaleQuestions(
+    root,
+    findHotspots(repo, (map.models ?? []).map((m) => m.name)),
+    1,
+  );
   // Both model calls at once: history mining adds a round trip that has no
   // reason to wait for the snippet writer.
   const [snippetSet, commits] = await Promise.all([
@@ -495,8 +565,10 @@ export async function generateQuestions(
   // what makes the deterministic side deep enough to carry seven.
   const tier3 = snippets.slice(0, 3);
 
-  // Ground up: fundamentals → functions → modules → seams (BUILD_PLAN §3)
-  const questions = [
+  // Ground up: fundamentals → functions → modules → seams → the whole system
+  // (BUILD_PLAN §3). Layer 4 is last, so it gets a reserved slot rather than
+  // being the thing the cap trims.
+  const climb = [
     ...tier3,
     ...handlers,
     ...routeModels,
@@ -504,7 +576,9 @@ export async function generateQuestions(
     ...commits,
     ...imports,
     ...fieldRefs,
-  ].slice(0, 10);
+  ];
+  const questions =
+    scale.length > 0 ? [...climb.slice(0, 10 - scale.length), ...scale] : climb.slice(0, 10);
 
   if (questions.length < 3) {
     throw new Error(
