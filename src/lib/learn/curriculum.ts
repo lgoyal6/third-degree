@@ -79,7 +79,7 @@ const MODULE_SCHEMA = {
           title: {
             type: "string",
             description:
-              "Three to six words naming what these concepts have in common, in a developer's words. Not a course title, no numbering, no colons.",
+              "Three to six words naming what these concepts have in common, in a developer's words. Sentence case, like a note to yourself. Not a course title: no numbering, no colons, no Title Case.",
           },
           why: {
             type: "string",

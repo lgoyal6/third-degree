@@ -225,7 +225,7 @@ Timed, unassisted, recorded, shareable session link. Portfolio view, cross-repo 
 
 **Video lesson content.** Wanted, and the cost outlier by an order of magnitude. Flashcards captured most of the value for a fraction of the effort, which is why the submission ships cards. Revisit only if card completion data says people want more depth.
 
-**Full curriculum** *(needs identity)*. Ordered modules, prerequisites, mastery per concept tag, and "rebuild your own project" as the capstone. This is where §8's `ReviewCard` and emergent concept tags were already heading; it is M2 Learn mode grown up.
+**Full curriculum** *(shipped Aug 23, 2026)*. Ordered modules, prerequisites, mastery per concept tag, and "rebuild your own project" as the capstone - all derived, none authored, because §8 rules out a hand-curated ontology and says to formalize once the data shows which concepts recur. Mastery is computed per tag from their own answers, with an explicit confidence flag so a single lucky answer never reads as mastery. Order comes from the §3 layer each concept was tested at, which cards now record; prerequisites fall out of that as "easier after X" rather than as gates (§7). Modules are the model naming groups from a list of the user's own tags, which it may not add to; with no model available the layer grouping is the whole answer. The capstone is built from their map: models to write from memory, the entry point, two endpoints and a page, the file everything leans on, then breaking it on purpose.
 
 ---
 
