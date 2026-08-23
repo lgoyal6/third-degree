@@ -103,9 +103,11 @@ export function recordAnswer(input: {
   score: number | null;
   repo: string;
   prompt: string;
+  /** Answered with the ladder's help. Counts as a miss however it scored. */
+  hinted?: boolean;
 }): ReviewCard[] {
   if (typeof window === "undefined" || input.tags.length === 0) return [];
-  const missed = input.score === null || input.score < PASS_MARK;
+  const missed = input.hinted === true || input.score === null || input.score < PASS_MARK;
   const cards = readCards();
   const today = localDate();
 

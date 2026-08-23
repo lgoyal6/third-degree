@@ -19,7 +19,15 @@ interface LastResult {
   score: number | null;
   feedback: string;
   reveal: string;
+  /** Learn mode: the same question is coming back for one more try. */
+  retry?: boolean;
 }
+
+// §6's struggle signals, in the only forms a Q&A surface can actually observe.
+const NUDGE_COPY: Record<string, string> = {
+  dwell: "Still on this one. Tell me what you think is happening and we'll go from there.",
+  scrub: "You keep starting over. Easier out loud than on the page?",
+};
 
 export default function GrillView({ sessionId }: { sessionId: string }) {
   const router = useRouter();
@@ -30,6 +38,12 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
   const [last, setLast] = useState<LastResult | null>(null);
   const [learning, setLearning] = useState(false);
   const [returned, setReturned] = useState<string[]>([]);
+  const [helping, setHelping] = useState(false); // ladder open on the live question
+  const [nudge, setNudge] = useState<string | null>(null);
+  const hinted = useRef<Set<string>>(new Set());
+  const typedAt = useRef<number>(0);
+  const peak = useRef(0);
+  const scrubs = useRef(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const questionShownAt = useRef<number | null>(null);
@@ -74,10 +88,36 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") router.push("/");
+      // §7: `?` opens the companion. Learn mode only, and never mid-sentence.
+      if (e.key === "?" && state?.mode === "learn") {
+        const el = e.target as HTMLElement | null;
+        if (el && /^(INPUT|TEXTAREA)$/.test(el.tagName)) return;
+        e.preventDefault();
+        setNudge(null);
+        setHelping(true);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [router]);
+  }, [router, state?.mode]);
+
+  // A question worked through with the duck is not one they knew cold, so the
+  // review card is filed as a miss however the answer then scores.
+  useEffect(() => {
+    if (helping && state?.question) hinted.current.add(state.question.id);
+  }, [helping, state?.question]);
+
+  // §6's dwell signal: sitting on a question with nothing on the page.
+  useEffect(() => {
+    if (state?.mode !== "learn" || last || helping) return;
+    const t = setInterval(() => {
+      const since = Math.max(typedAt.current, questionShownAt.current ?? 0);
+      if (Date.now() - since > 45_000 && answer.trim().length < 40) {
+        setNudge((n) => n ?? "dwell");
+      }
+    }, 5_000);
+    return () => clearInterval(t);
+  }, [state?.mode, last, helping, answer]);
 
   const submit = useCallback(async () => {
     if (!answer.trim() || submitting) return;
@@ -93,14 +133,15 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Couldn't grade that.");
-      setLast({ score: data.score, feedback: data.feedback, reveal: data.reveal });
+      setLast({ score: data.score, feedback: data.feedback, reveal: data.reveal, retry: data.retry });
       setState(data.state);
-      setAnswer("");
-      // File the result against the concepts it tested, and notice when one the
-      // queue was already waiting on has just come back around.
+      // A retry keeps the text so they can sharpen it rather than retype it.
+      if (!data.retry) setAnswer("");
+      // File the result against the concepts it tested once the question is
+      // settled, and notice when one the queue was waiting on has come back.
       const graded: ViewState["answered"][number] | undefined =
         data.state.answered[data.state.answered.length - 1];
-      if (graded) {
+      if (graded && !data.retry) {
         const waiting = dueTags();
         setReturned(graded.conceptTags.filter((t) => waiting.includes(t)));
         recordAnswer({
@@ -108,6 +149,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
           score: data.score,
           repo: `${data.state.repo.owner}/${data.state.repo.name}`,
           prompt: graded.prompt,
+          hinted: hinted.current.has(graded.id),
         });
       }
     } catch {
@@ -122,6 +164,11 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
     setLearning(false);
     setShowAnswer(false);
     setReturned([]);
+    setHelping(false);
+    setNudge(null);
+    typedAt.current = Date.now();
+    peak.current = 0;
+    scrubs.current = 0;
     questionShownAt.current = Date.now();
     setElapsed(0);
     setTimeout(() => answerRef.current?.focus(), 0);
@@ -150,6 +197,68 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
 
   const q = state.question;
   if (!q) return <Preparing label="loading" />;
+  const learn = state.mode === "learn";
+
+  // Learn mode: missed, and the same question is coming back. No reveal was
+  // sent, which is what makes the second try worth anything.
+  if (last?.retry) {
+    return (
+      <>
+        <StatusLine repo={`${state.repo.owner}/${state.repo.name}`} branch={state.repo.defaultBranch}>
+          <span className="text-ink-muted">learn mode</span>
+          <StreakBadge />
+        </StatusLine>
+        <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-5 px-6 py-8">
+          <p className="font-mono text-xs text-ink-muted">
+            question {String(state.currentIndex + 1).padStart(2, "0")} of{" "}
+            {String(state.total).padStart(2, "0")} · try two
+          </p>
+          <div className="fade-up rounded-md border border-attention/40 bg-surface">
+            <div className="border-b border-line px-6 py-4">
+              <p className="text-sm leading-relaxed">{renderPrompt(q.prompt)}</p>
+              <p className="mt-3 font-mono text-xs leading-relaxed text-ink-muted">
+                <span className="text-ink-muted/60">you said</span> {answer}
+              </p>
+            </div>
+            <div className="px-6 py-5">
+              <p className="font-mono text-xs text-attention">not there yet</p>
+              <p className="mt-2 leading-relaxed">{last.feedback}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="max-w-sm text-sm text-ink-muted">
+              Same question, your answer still in the box. Sharpen it, or talk it through first.
+            </p>
+            <div className="flex items-center gap-3">
+              {!helping && (
+                <button
+                  onClick={() => setHelping(true)}
+                  className="cursor-pointer font-mono text-xs text-ink-muted hover:text-lamp"
+                >
+                  talk it through
+                </button>
+              )}
+              <button
+                onClick={next}
+                autoFocus
+                className="cursor-pointer rounded bg-lamp px-6 py-3 font-medium text-bg hover:bg-lamp-bright"
+              >
+                Try again ⏎
+              </button>
+            </div>
+          </div>
+          {helping && (
+            <HintLadder
+              sessionId={sessionId}
+              questionId={q.id}
+              onFinished={() => setHelping(false)}
+              finishLabel="Back to the question ⏎"
+            />
+          )}
+        </main>
+      </>
+    );
+  }
 
   // Feedback interstitial after each answer
   if (last) {
@@ -265,9 +374,13 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
       <StatusLine repo={`${state.repo.owner}/${state.repo.name}`} branch={state.repo.defaultBranch}>
         <span className="text-lamp">{LAYER_LABEL[q.layer]}</span>
         <StreakBadge />
-        <span className="tabular-nums text-ink" aria-label="elapsed time">
-          {String(Math.floor(elapsed / 60)).padStart(2, "0")}:{String(elapsed % 60).padStart(2, "0")}
-        </span>
+        {learn ? (
+          <span className="text-ink-muted">learn mode</span>
+        ) : (
+          <span className="tabular-nums text-ink" aria-label="elapsed time">
+            {String(Math.floor(elapsed / 60)).padStart(2, "0")}:{String(elapsed % 60).padStart(2, "0")}
+          </span>
+        )}
       </StatusLine>
       <main
         className={`mx-auto flex w-full flex-1 flex-col px-6 py-6 ${
@@ -320,7 +433,18 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
             ref={answerRef}
             autoFocus
             value={answer}
-            onChange={(e) => setAnswer(e.target.value)}
+            onChange={(e) => {
+              setAnswer(e.target.value);
+              typedAt.current = Date.now();
+              // §6's start-delete-restart signal.
+              const len = e.target.value.trim().length;
+              if (len > peak.current) peak.current = len;
+              else if (peak.current >= 25 && len < peak.current * 0.4) {
+                peak.current = len;
+                scrubs.current += 1;
+                if (scrubs.current >= 2) setNudge((n) => n ?? "scrub");
+              }
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -331,8 +455,45 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
             rows={q.kind === "overview" ? 12 : 7}
             className="w-full flex-none resize-none rounded-md border border-line bg-surface p-4 font-mono text-sm placeholder:text-ink-muted/50"
           />
+          {learn && (
+            <div className="flex flex-col gap-3">
+              {nudge && !helping && (
+                <div className="fade-up flex flex-wrap items-center justify-between gap-3 rounded-md border border-attention/40 bg-surface px-4 py-3">
+                  <p className="text-sm text-ink-muted">{NUDGE_COPY[nudge]}</p>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <button
+                      onClick={() => setNudge(null)}
+                      className="cursor-pointer font-mono text-xs text-ink-muted hover:text-lamp"
+                    >
+                      not yet
+                    </button>
+                    <button
+                      onClick={() => {
+                        setNudge(null);
+                        setHelping(true);
+                      }}
+                      className="cursor-pointer rounded border border-lamp px-3 py-1.5 font-mono text-xs text-lamp hover:bg-lamp hover:text-bg"
+                    >
+                      talk it through
+                    </button>
+                  </div>
+                </div>
+              )}
+              {helping && (
+                <HintLadder
+                  sessionId={sessionId}
+                  questionId={q.id}
+                  onFinished={() => setHelping(false)}
+                  finishLabel="Back to the question ⏎"
+                />
+              )}
+            </div>
+          )}
+
           <div className="flex items-center justify-between">
-            <p className="font-mono text-xs text-ink-muted">⏎ submit · shift+⏎ newline · esc quit</p>
+            <p className="font-mono text-xs text-ink-muted">
+              ⏎ submit · shift+⏎ newline{learn ? " · ? stuck" : ""} · esc quit
+            </p>
             <button
               onClick={submit}
               disabled={submitting || !answer.trim()}
@@ -405,6 +566,7 @@ function Message({ text, cta }: { text: string; cta: string }) {
 
 function ScoreScreen({ state }: { state: ViewState }) {
   const [copied, setCopied] = useState(false);
+  const learn = state.mode === "learn";
   const shareUrl = typeof window !== "undefined" ? `${window.location.origin}/s/${state.slug}` : `/s/${state.slug}`;
   const verdict = (state.verdict ?? "raw") as Verdict;
 
@@ -416,8 +578,24 @@ function ScoreScreen({ state }: { state: ViewState }) {
       </span>
     </StatusLine>
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-10">
-      {/* The one surface in the product that is not the editor: the verdict is a
-          document you are handed, which is also what makes it worth screenshotting. */}
+      {/* Learn mode's output is progress and review cards, not a share card
+          (§4): a score you were talked through is not one to show anyone. */}
+      {learn ? (
+        <section className="fade-up rounded-md border border-line bg-surface p-8">
+          <p className="font-mono text-xs text-lamp">session done</p>
+          <p className="mt-3 font-display text-2xl font-semibold">
+            You worked through {state.answered.length} question
+            {state.answered.length === 1 ? "" : "s"}.
+          </p>
+          <p className="mt-2 max-w-lg leading-relaxed text-ink-muted">
+            No share card here, and no verdict. What you missed is filed by concept and comes back
+            when something else tests the same idea.
+          </p>
+          <p className="mt-5 border-t border-line pt-4 font-mono text-xs text-ink-muted">
+            {state.score}/100 across the session, kept between us
+          </p>
+        </section>
+      ) : (
       <section className="paper fade-up rounded-sm p-8 shadow-lg shadow-black/40">
         <div className="flex items-baseline justify-between gap-4 border-b-2 border-paper-rule pb-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.22em] text-paper-muted">
@@ -464,6 +642,7 @@ function ScoreScreen({ state }: { state: ViewState }) {
           </div>
         )}
       </section>
+      )}
 
       <div className="flex items-center justify-between">
         <h2 className="font-display text-xl font-semibold">The tape</h2>

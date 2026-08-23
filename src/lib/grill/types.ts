@@ -37,6 +37,8 @@ export interface GrillQuestion {
 export interface Attempt {
   questionId: string;
   answer: string;
+  /** Answers given to this question. Only Learn mode allows more than one. */
+  tries?: number;
   score: number | null; // null = grading unavailable, excluded from total
   feedback: string;
   latencyMs: number;
@@ -48,6 +50,20 @@ export type Verdict = "raw" | "rare" | "medium" | "well-done";
 export interface GrillSession {
   id: string;
   slug: string;
+  /**
+   * §4's two modes. Absent means grill, so sessions created before Learn mode
+   * existed keep working. Grill is assessment: clock on, no help, share card.
+   * Learn is the retention half: companion on, hints on the live question, a
+   * second try at a miss, and no share card, because help and assessment never
+   * coexist in one mode.
+   */
+  mode?: "learn";
+  /**
+   * Ladder rungs taken on a question before answering it, by question id. Only
+   * Learn mode can produce these, and they are folded into the attempt's
+   * hintsUsed when the answer finally lands.
+   */
+  hintsAhead?: Record<string, number>;
   status: "preparing" | "ready" | "error";
   error?: string;
   repo: {

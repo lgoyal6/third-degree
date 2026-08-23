@@ -23,14 +23,15 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
   const [grilling, setGrilling] = useState(false);
   const [expressError, setExpressError] = useState<string | null>(null);
 
-  const startGrill = useCallback(async () => {
+  // Learn mode is the same ladder with the companion on and the clock off (§4).
+  const startGrill = useCallback(async (mode?: "learn") => {
     if (grilling) return;
     setGrilling(true);
     try {
       const res = await fetch("/api/grill", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId }),
+        body: JSON.stringify({ jobId, mode }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -167,7 +168,7 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
           <p className="text-lg">Nothing to teach on this one.</p>
           <p className="mt-2 text-ink-muted">Straight to the questions, then.</p>
           <button
-            onClick={startGrill}
+            onClick={() => startGrill()}
             disabled={grilling}
             className="mt-5 cursor-pointer rounded bg-lamp px-6 py-2.5 font-medium text-bg hover:bg-lamp-bright disabled:opacity-60"
           >
@@ -268,7 +269,7 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
         </button>
         <div className="flex items-center gap-3">
           <button
-            onClick={startGrill}
+            onClick={() => startGrill()}
             disabled={grilling}
             className="cursor-pointer rounded px-4 py-2.5 font-mono text-xs text-ink-muted hover:text-lamp disabled:opacity-60"
           >
@@ -286,6 +287,13 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
 
       <footer className="pb-10">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+          <button
+            onClick={() => startGrill("learn")}
+            disabled={grilling}
+            className="cursor-pointer font-mono text-xs text-ink-muted hover:text-lamp disabled:opacity-60"
+          >
+            I want to learn it, not be scored → hints on, clock off
+          </button>
           <button
             onClick={startExpress}
             disabled={grilling}

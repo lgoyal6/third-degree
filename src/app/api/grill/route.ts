@@ -39,7 +39,7 @@ export async function POST(request: Request) {
   const limited = await checkLimit(request, "grill");
   if (limited) return limited;
 
-  let body: { jobId?: string };
+  let body: { jobId?: string; mode?: string };
   try {
     body = await request.json();
   } catch {
@@ -60,6 +60,7 @@ export async function POST(request: Request) {
       description: meta.description,
       private: meta.private,
     },
+    mode: body.mode === "learn" ? ("learn" as const) : undefined,
     frameworks: job.map.stack?.frameworks ?? [],
     modelNames: (job.map.models ?? []).map((m) => m.name),
     questions: [],

@@ -19,10 +19,13 @@ export default function HintLadder({
   sessionId,
   questionId,
   onFinished,
+  finishLabel = "Next question ⏎",
 }: {
   sessionId: string;
   questionId: string;
   onFinished: () => void;
+  /** Learn mode works the ladder on the live question, so finishing goes back to it. */
+  finishLabel?: string;
 }) {
   const [lines, setLines] = useState<Line[]>([]);
   const [rung, setRung] = useState(1);
@@ -124,7 +127,7 @@ export default function HintLadder({
             autoFocus
             className="cursor-pointer rounded bg-lamp px-5 py-2.5 font-medium text-bg hover:bg-lamp-bright"
           >
-            Next question ⏎
+            {finishLabel}
           </button>
         </div>
       ) : (

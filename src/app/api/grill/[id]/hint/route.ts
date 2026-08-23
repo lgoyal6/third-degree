@@ -34,9 +34,11 @@ export async function POST(
   if (index === -1) {
     return NextResponse.json({ error: "No such question." }, { status: 404 });
   }
-  // §4: help and assessment never share a mode. The ladder only opens on a
-  // question whose score is already locked in.
-  if (index >= session.currentIndex) {
+  // §4: help and assessment never share a mode. In Grill the ladder only opens
+  // on a question whose score is already locked in; in Learn it opens on the
+  // one in front of you, which is what the companion is for.
+  const live = session.mode === "learn" && index === session.currentIndex;
+  if (index >= session.currentIndex && !live) {
     return NextResponse.json(
       { error: "That question hasn't been answered yet." },
       { status: 409 },
@@ -65,6 +67,12 @@ export async function POST(
   const attempt = session.attempts[index];
   if (attempt) {
     attempt.hintsUsed = (attempt.hintsUsed ?? 0) + 1;
+    await saveSession(session);
+  } else if (live) {
+    // Worked out with help, before answering. Counted so the answer that
+    // follows is not mistaken for something they knew cold.
+    const id = session.questions[index].id;
+    session.hintsAhead = { ...session.hintsAhead, [id]: (session.hintsAhead?.[id] ?? 0) + 1 };
     await saveSession(session);
   }
 

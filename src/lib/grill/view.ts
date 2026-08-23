@@ -6,6 +6,7 @@ export interface GrillView {
   id: string;
   slug: string;
   status: GrillSession["status"];
+  mode: "grill" | "learn";
   error?: string;
   repo: GrillSession["repo"];
   frameworks: string[];
@@ -42,6 +43,7 @@ export function publicView(session: GrillSession): GrillView {
     id: session.id,
     slug: session.slug,
     status: session.status,
+    mode: session.mode === "learn" ? "learn" : "grill",
     error: session.error,
     repo: session.repo,
     frameworks: session.frameworks,
@@ -59,7 +61,9 @@ export function publicView(session: GrillSession): GrillView {
           contextCode: current.contextCode,
         }
       : null,
-    answered: session.attempts.map((a, i) => {
+    // Sliced at the cursor: a Learn retry leaves a graded attempt sitting on a
+    // question that is still live, and every answered entry carries its reveal.
+    answered: session.attempts.slice(0, session.currentIndex).map((a, i) => {
       const question = session.questions[i];
       return {
         id: question?.id ?? "",
