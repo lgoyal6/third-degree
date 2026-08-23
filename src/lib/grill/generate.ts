@@ -6,7 +6,7 @@ import type { CodeMap } from "../types";
 import type { FileEntry } from "../indexer/walk";
 import { buildImportGraph, type ImportGraph } from "../imports";
 import { buildSymbolGraph, type SymbolRef } from "../indexer/symbols";
-import { mentionsPath, mineCommit } from "../indexer/history";
+import { mentionsPath, mineCommit, pathWords, type MinedCommit } from "../indexer/history";
 import type { ContextCode, GrillQuestion } from "./types";
 import { KIND_TAGS, normalizeTags } from "../learn/tags";
 
@@ -153,6 +153,40 @@ const COMMIT_SCHEMA = {
  * failure path returns nothing, because git mining is opportunistic and must
  * never carry the session.
  */
+async function describeCommit(mined: MinedCommit, retryOf?: string): Promise<string | null> {
+  const banned = pathWords(mined.files);
+  const client = new Anthropic();
+  const response = await client.messages.create({
+    model: "claude-opus-4-8",
+    max_tokens: 512,
+    output_config: { effort: "low", format: { type: "json_schema", schema: COMMIT_SCHEMA } },
+    system:
+      "You turn a commit into an interview question for Third Degree. You are given a real diff from the candidate's own repository. Describe what the change did so that someone who knows the codebase could work out where it must have landed, without being told. The description is the only thing they see: the diff and the paths stay hidden.",
+    messages: [
+      {
+        role: "user",
+        content: [
+          `Commit subject: ${mined.subject}`,
+          // Naming a changed file answers the question, and these words name
+          // them. The subject usually contains some of them, so it cannot be
+          // paraphrased loosely.
+          `Words you may not use, in any form: ${banned.join(", ")}`,
+          retryOf ? `Your last attempt used one of them: "${retryOf}" — say it another way.` : "",
+          "",
+          mined.patch,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      },
+    ],
+  });
+  if (response.stop_reason === "refusal") return null;
+  const block = response.content.find((b) => b.type === "text");
+  if (!block || block.type !== "text") return null;
+  const { description } = JSON.parse(block.text) as { description: string };
+  return description?.trim() || null;
+}
+
 async function commitQuestions(map: CodeMap, token?: string): Promise<GrillQuestion[]> {
   const meta = map.meta;
   if (!meta) return [];
@@ -160,32 +194,19 @@ async function commitQuestions(map: CodeMap, token?: string): Promise<GrillQuest
   if (!mined) return [];
 
   try {
-    const client = new Anthropic();
-    const response = await client.messages.create({
-      model: "claude-opus-4-8",
-      max_tokens: 512,
-      output_config: { effort: "low", format: { type: "json_schema", schema: COMMIT_SCHEMA } },
-      system:
-        "You turn a commit into an interview question for Third Degree. You are given a real diff from the candidate\'s own repository. Describe what the change did so that someone who knows the codebase could work out where it must have landed, without being told. The description is the only thing they see: the diff and the paths stay hidden.",
-      messages: [
-        {
-          role: "user",
-          content: `Commit subject: ${mined.subject}\n\n${mined.patch}`,
-        },
-      ],
-    });
-    if (response.stop_reason === "refusal") return [];
-    const block = response.content.find((b) => b.type === "text");
-    if (!block || block.type !== "text") return [];
-    const { description } = JSON.parse(block.text) as { description: string };
-    // A description that names one of the files answers its own question.
+    let description = await describeCommit(mined);
+    // One rewrite: "Model selector tweaks" is hard to describe without saying
+    // it, and a dropped question is worse than a second call.
+    if (description && mentionsPath(description, mined.files)) {
+      description = await describeCommit(mined, description);
+    }
     if (!description || mentionsPath(description, mined.files)) return [];
 
     return [
       q({
         layer: 3,
         kind: "commit-scope",
-        prompt: `A real commit in this repo did this: ${description.trim()} Which files did it change? List the paths.`,
+        prompt: `A real commit in this repo did this: ${description} Which files did it change? List the paths.`,
         groundTruth: { files: mined.files, reveal: mined.files.join("\n") },
         gradingTier: 1,
       }),

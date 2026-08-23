@@ -121,18 +121,32 @@ export async function mineCommit(
   return null;
 }
 
-/** Catches a description that gave away a path, in words or in camelCase. */
-export function mentionsPath(description: string, files: string[]): boolean {
-  const words = (text: string) => text.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
-  const haystack = ` ${words(description.replace(/([a-z])([A-Z])/g, "$1 $2"))} `;
+/**
+ * The vocabulary that would give the paths away: whole file basenames as
+ * words, plus any distinctive word inside them. Short generic segments (api,
+ * app, ui) are left out — they are unavoidable in prose and give nothing away.
+ */
+export function pathWords(files: string[]): string[] {
+  const out = new Set<string>();
   for (const file of files) {
     const base = (file.split("/").pop() ?? file).replace(/\.[^.]+$/, "");
-    const spaced = words(base.replace(/([a-z])([A-Z])/g, "$1 $2"));
-    const parts = spaced.split(" ").filter((w) => w.length >= 6);
-    // The whole basename, then any distinctive word inside it. Short generic
-    // segments (api, app, ui) are skipped: they are unavoidable in prose.
-    if (spaced.split(" ").length > 1 && haystack.includes(` ${spaced} `)) return true;
-    if (parts.some((w) => haystack.includes(` ${w} `))) return true;
+    const spaced = base
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/[^A-Za-z0-9]+/g, " ")
+      .trim()
+      .toLowerCase();
+    if (spaced.includes(" ")) out.add(spaced);
+    for (const word of spaced.split(" ")) if (word.length >= 6) out.add(word);
   }
-  return false;
+  return [...out];
+}
+
+/** Catches a description that gave away a path, in words or in camelCase. */
+export function mentionsPath(description: string, files: string[]): boolean {
+  const haystack = ` ${description
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()} `;
+  return pathWords(files).some((word) => haystack.includes(` ${word} `));
 }
