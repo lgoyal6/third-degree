@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import ReviewLink from "@/components/ReviewLink";
 import type { RepoChoice } from "@/app/api/repos/route";
 
 const EXAMPLES = ["shadcn-ui/taxonomy", "steven-tey/precedent"];
@@ -224,6 +225,8 @@ export default function Start() {
             </button>
           ))}
         </div>
+
+        <ReviewLink className="mt-12 block" />
       </div>
     </main>
   );

@@ -8,7 +8,9 @@ import { VERDICT_COPY, type Verdict } from "@/lib/grill/types";
 import StreakBadge from "@/components/StreakBadge";
 import StatusLine from "@/components/StatusLine";
 import HintLadder from "@/components/HintLadder";
+import ReviewLink from "@/components/ReviewLink";
 import { recordCompletion } from "@/lib/progress";
+import { dueTags, recordAnswer } from "@/lib/review";
 
 const LAYER_LABEL: Record<number, string> = { 1: "fundamentals", 2: "modules", 3: "seams", 4: "the whole system" };
 const POLL_MS = 900;
@@ -27,6 +29,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [last, setLast] = useState<LastResult | null>(null);
   const [learning, setLearning] = useState(false);
+  const [returned, setReturned] = useState<string[]>([]);
   const [showAnswer, setShowAnswer] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const questionShownAt = useRef<number | null>(null);
@@ -93,6 +96,20 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
       setLast({ score: data.score, feedback: data.feedback, reveal: data.reveal });
       setState(data.state);
       setAnswer("");
+      // File the result against the concepts it tested, and notice when one the
+      // queue was already waiting on has just come back around.
+      const graded: ViewState["answered"][number] | undefined =
+        data.state.answered[data.state.answered.length - 1];
+      if (graded) {
+        const waiting = dueTags();
+        setReturned(graded.conceptTags.filter((t) => waiting.includes(t)));
+        recordAnswer({
+          tags: graded.conceptTags,
+          score: data.score,
+          repo: `${data.state.repo.owner}/${data.state.repo.name}`,
+          prompt: graded.prompt,
+        });
+      }
     } catch {
       // keep the answer in the box; user can retry
     } finally {
@@ -104,6 +121,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
     setLast(null);
     setLearning(false);
     setShowAnswer(false);
+    setReturned([]);
     questionShownAt.current = Date.now();
     setElapsed(0);
     setTimeout(() => answerRef.current?.focus(), 0);
@@ -189,6 +207,11 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
             </p>
             <p className="font-mono text-xs text-lamp">{LAYER_LABEL[lastLayer] ?? ""}</p>
             <ConceptTags tags={graded?.conceptTags ?? []} />
+            {returned.length > 0 && (
+              <span className="font-mono text-[11px] text-attention" title={returned.join(", ")}>
+                back from review
+              </span>
+            )}
           </div>
           <p className="px-6 pt-3 leading-relaxed">{last.feedback}</p>
 
@@ -468,10 +491,11 @@ function ScoreScreen({ state }: { state: ViewState }) {
         </ol>
       </section>
 
-      <footer className="pb-10">
+      <footer className="flex items-center gap-5 pb-10">
         <Link href="/" className="font-mono text-xs text-ink-muted hover:text-lamp">
           map another repo
         </Link>
+        <ReviewLink />
       </footer>
     </main>
     </>
