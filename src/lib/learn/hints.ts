@@ -137,9 +137,11 @@ function focusOf(
   const last = first + total - 1;
   const start = Math.max(first, Math.min(startLine, last));
   const end = Math.max(start, Math.min(endLine, last));
-  // Twelve lines at most, and never more than 60% of what is on screen:
-  // highlighting most of the snippet points at nothing.
-  const maxSpan = Math.max(4, Math.min(12, Math.floor(total * 0.6)));
+  // Never most of the snippet, since highlighting everything points at
+  // nothing. The prompt asks for a handful of deciding lines and usually gets
+  // them; when it comes back with the enclosing block instead, a loose region
+  // still narrows the search and beats no highlight at all.
+  const maxSpan = Math.max(4, Math.floor(total * 0.6));
   if (end - start + 1 > maxSpan) return undefined;
   return { startLine: start, endLine: end };
 }
