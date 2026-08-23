@@ -173,8 +173,11 @@ function Block({
   tone: "err" | "ok";
   startLine?: number;
 }) {
-  const wash = tone === "err" ? "bg-err/5" : "bg-ok/5";
+  // Removed lines read as the past: dimmer, tinted red. The replacement is
+  // what they act on, so it gets full-strength ink.
+  const wash = tone === "err" ? "bg-err/10" : "bg-ok/10";
   const ink = tone === "err" ? "text-err" : "text-ok";
+  const text = tone === "err" ? "text-ink-muted/70" : "text-ink";
   return (
     <div className={wash}>
       {lines.map((line, i) => (
@@ -185,7 +188,7 @@ function Block({
           <span aria-hidden className={`w-4 shrink-0 select-none ${ink}`}>
             {sign}
           </span>
-          <span className="whitespace-pre pr-5 text-ink-muted">{line || " "}</span>
+          <span className={`whitespace-pre pr-5 ${text}`}>{line || " "}</span>
         </div>
       ))}
     </div>

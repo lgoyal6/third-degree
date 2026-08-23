@@ -17,7 +17,7 @@ import type { FileEntry } from "../indexer/walk";
  */
 
 const MAX_ITEMS = 6;
-const MAX_FILE_LINES = 220;
+const MAX_FILE_LINES = 320;
 const CODE = /\.(tsx|ts|jsx|js)$/;
 
 const CRAFT_SCHEMA = {
@@ -32,7 +32,7 @@ const CRAFT_SCHEMA = {
             type: "string",
             enum: ["ui", "accessibility", "states", "hardening"],
             description:
-              "ui: a technique that makes the interface feel considered. accessibility: keyboard, focus, labels, contrast, motion. states: loading, empty, error, offline. hardening: what breaks in production — validation, limits, timeouts, leaks.",
+              "ui: a technique that makes the interface feel considered, including the words a user reads. accessibility: keyboard, focus order, labels and roles, contrast, reduced motion — the things assistive technology depends on, not wording. states: loading, empty, error, offline. hardening: what breaks in production — validation, limits, timeouts, leaks.",
           },
           file: { type: "string", description: "Repo-relative path, exactly as given." },
           before: {
@@ -113,7 +113,7 @@ function targets(map: CodeMap, files: FileEntry[]): string[] {
     ...(map.entryPoints ?? []),
   ].filter((p): p is string => Boolean(p));
 
-  return [...new Set(chosen)].slice(0, 3);
+  return [...new Set(chosen)].slice(0, 4);
 }
 
 export async function generateCraft(
