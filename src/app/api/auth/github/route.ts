@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import {
-  GITHUB_SCOPE,
+  SCOPES,
   callbackUrl,
   createState,
   dropSession,
   oauthConfigured,
+  scopeFrom,
   sessionCookie,
   sessionId,
 } from "@/lib/auth/github";
@@ -13,11 +14,15 @@ export async function GET(request: Request) {
   if (!oauthConfigured()) {
     return NextResponse.redirect(new URL("/?gh=unavailable", request.url));
   }
+  // ?scope=repos is the private-repo path; signing in asks for a name and
+  // nothing else. The state carries the choice through the round trip so the
+  // callback knows what was granted.
+  const scope = scopeFrom(new URL(request.url).searchParams.get("scope"));
   const params = new URLSearchParams({
     client_id: process.env.GITHUB_OAUTH_CLIENT_ID!,
     redirect_uri: callbackUrl(request),
-    scope: GITHUB_SCOPE,
-    state: await createState(),
+    scope: SCOPES[scope],
+    state: `${scope}.${await createState()}`,
   });
   return NextResponse.redirect(`https://github.com/login/oauth/authorize?${params}`);
 }

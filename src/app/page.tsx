@@ -4,11 +4,13 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import ReviewLink from "@/components/ReviewLink";
 import ShelfLink from "@/components/ShelfLink";
+import AccountBadge from "@/components/AccountBadge";
 import type { RepoChoice } from "@/app/api/repos/route";
 
 const EXAMPLES = ["shadcn-ui/taxonomy", "steven-tey/precedent"];
 
 const GH_NOTICE: Record<string, string> = {
+  signedin: "Signed in. Your streak, queue and shelf follow you now.",
   denied: "You cancelled the GitHub connection. Pasting a URL still works.",
   state: "That GitHub redirect expired. Connect again.",
   failed: "Couldn't finish the GitHub connection. Try again, or just paste a URL.",
@@ -130,7 +132,7 @@ export default function Start() {
         {canConnect && repos === null && (
           <div className="mt-10">
             <a
-              href="/api/auth/github"
+              href="/api/auth/github?scope=repos"
               className="inline-block rounded border border-line px-4 py-2 font-mono text-xs text-ink-muted hover:border-lamp hover:text-ink"
             >
               connect github for private repos
@@ -227,7 +229,8 @@ export default function Start() {
           ))}
         </div>
 
-        <div className="mt-12 flex items-center justify-center gap-5">
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-5">
+          <AccountBadge available={canConnect || repos !== null} />
           <ShelfLink />
           <ReviewLink />
         </div>

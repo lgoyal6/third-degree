@@ -3,9 +3,11 @@ import {
   callbackUrl,
   consumeState,
   oauthConfigured,
+  scopeFrom,
   sessionCookie,
-  storeToken,
+  storeSession,
 } from "@/lib/auth/github";
+import { rememberUser } from "@/lib/account/store";
 
 function home(request: Request, status: string) {
   return NextResponse.redirect(new URL(`/?gh=${status}`, request.url));
@@ -20,7 +22,11 @@ export async function GET(request: Request) {
 
   const code = params.get("code");
   if (!code) return home(request, "failed");
-  if (!(await consumeState(params.get("state")))) return home(request, "state");
+  // "<scope>.<nonce>": the nonce is what is single-use, the prefix only says
+  // which flow started it.
+  const [scopeHint, ...rest] = (params.get("state") ?? "").split(".");
+  const scope = scopeFrom(scopeHint);
+  if (!(await consumeState(rest.join(".") || null))) return home(request, "state");
 
   let token: string | undefined;
   try {
@@ -49,8 +55,37 @@ export async function GET(request: Request) {
   }
   if (!token) return home(request, "failed");
 
-  const id = await storeToken(token);
-  const res = home(request, "connected");
+  // Who they are, once, at sign-in: the account is keyed by GitHub's own id
+  // rather than the login, which people change.
+  let account: { id: number; login: string; avatar_url?: string } | undefined;
+  try {
+    const res = await fetch("https://api.github.com/user", {
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "User-Agent": "third-degree-indexer",
+      },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (res.ok) account = await res.json();
+  } catch (err) {
+    console.error("[gh-oauth] user lookup failed:", err instanceof Error ? err.message : err);
+  }
+  if (!account?.id) return home(request, "failed");
+
+  await rememberUser({
+    id: String(account.id),
+    login: account.login,
+    avatarUrl: account.avatar_url,
+  });
+  const id = await storeSession({
+    token,
+    scope,
+    userId: String(account.id),
+    login: account.login,
+    avatarUrl: account.avatar_url,
+  });
+  const res = home(request, scope === "repos" ? "connected" : "signedin");
   res.cookies.set(sessionCookie.name, id, sessionCookie.options);
   return res;
 }

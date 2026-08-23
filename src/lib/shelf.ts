@@ -50,6 +50,17 @@ export function remember(jobId: string, repo: string): void {
   }
 }
 
+/** Adopts the account's shelf. */
+export function hydrateShelf(entries: ShelfEntry[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(entries.slice(0, CAP)));
+    window.dispatchEvent(new Event(SHELF_EVENT));
+  } catch {
+    // ignore
+  }
+}
+
 export function forget(jobId: string): void {
   if (typeof window === "undefined") return;
   try {

@@ -44,6 +44,13 @@ function write(key: string, value: unknown): void {
   }
 }
 
+/** Adopts a record from the account, so signing in does not reset the streak. */
+export function hydrateProgress(next: Progress | null): void {
+  if (typeof window === "undefined" || !next) return;
+  write(KEY, next);
+  window.dispatchEvent(new Event(PROGRESS_EVENT));
+}
+
 export function readProgress(): Progress | null {
   const p = read<Progress>(KEY);
   if (!p || typeof p.current !== "number" || typeof p.points !== "number") return null;

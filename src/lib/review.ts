@@ -17,6 +17,12 @@ export interface ReviewCard {
   /** Local ISO date this concept comes back. */
   due: string;
   lastSeen: string;
+  /**
+   * Exact moment of the last answer. lastSeen is a date because the schedule
+   * is, but a date cannot order two cards touched the same day, and something
+   * has to when the queue is capped.
+   */
+  seenAt?: number;
   /** Where it has come up, newest first. Cross-repo history is the point. */
   repos: string[];
   lastPrompt: string;
@@ -68,12 +74,20 @@ function write(cards: ReviewCard[]): void {
   try {
     // Keep the most recently seen when capped: an old card nobody has met in
     // months is the one worth dropping.
-    const kept = [...cards].sort((a, b) => b.lastSeen.localeCompare(a.lastSeen)).slice(0, CARD_CAP);
+    const kept = [...cards]
+      .sort((a, b) => (b.seenAt ?? 0) - (a.seenAt ?? 0) || b.lastSeen.localeCompare(a.lastSeen))
+      .slice(0, CARD_CAP);
     window.localStorage.setItem(KEY, JSON.stringify(kept));
     window.dispatchEvent(new Event(REVIEW_EVENT));
   } catch {
     // private mode or a full quota: review is a nice-to-have, never a blocker
   }
+}
+
+/** Adopts the account's cards, keeping the local queue and the durable one one thing. */
+export function hydrateCards(cards: ReviewCard[]): void {
+  if (typeof window === "undefined") return;
+  write(cards);
 }
 
 /** Concepts whose date has arrived. */
@@ -128,6 +142,7 @@ export function recordAnswer(input: {
       streak,
       due: localDate(missed ? 1 : INTERVALS[Math.min(streak, INTERVALS.length) - 1]),
       lastSeen: today,
+      seenAt: Date.now(),
       repos: [input.repo, ...prev.repos.filter((r) => r !== input.repo)].slice(0, REPO_CAP),
       lastPrompt: input.prompt.slice(0, PROMPT_CAP),
       lastScore: input.score,

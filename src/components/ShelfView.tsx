@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import StatusLine from "@/components/StatusLine";
 import StreakBadge from "@/components/StreakBadge";
+import StorageNote from "@/components/StorageNote";
 import { readShelf, SHELF_EVENT, forget, type ShelfEntry } from "@/lib/shelf";
 import { readinessOf, type Readiness } from "@/lib/indexer/readiness";
-import { dueTags } from "@/lib/review";
+import { sessionTags } from "@/lib/account/client";
 import type { MapJob } from "@/lib/types";
 
 interface Card extends ShelfEntry {
@@ -83,7 +84,7 @@ export default function ShelfView() {
         const res = await fetch("/api/cram", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jobIds: picked, mode, dueTags: dueTags() }),
+          body: JSON.stringify({ jobIds: picked, mode, dueTags: sessionTags() }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "Couldn't set that up.");
@@ -174,10 +175,7 @@ export default function ShelfView() {
         {error && <p className="font-mono text-xs text-err">{error}</p>}
 
         <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-5 pb-10">
-          <p className="max-w-sm font-mono text-[11px] leading-relaxed text-ink-muted/70">
-            Kept in this browser, like your streak. Maps expire after seven days; anything gone is
-            marked and can be re-mapped.
-          </p>
+          <StorageNote subject="the shelf" />
           <Link href="/" className="font-mono text-xs text-ink-muted hover:text-lamp">
             map another repo →
           </Link>

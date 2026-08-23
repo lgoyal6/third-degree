@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import StatusLine from "@/components/StatusLine";
 import StreakBadge from "@/components/StreakBadge";
+import StorageNote from "@/components/StorageNote";
 import { isDue, mastery, readCards, REVIEW_EVENT, type ReviewCard } from "@/lib/review";
 
 const MASTERY_TONE: Record<string, string> = {
@@ -68,9 +69,7 @@ export default function ReviewQueue() {
 
         {cards !== null && cards.length > 0 && (
           <footer className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-5">
-            <p className="max-w-sm font-mono text-[11px] leading-relaxed text-ink-muted/70">
-              Kept in this browser, like your streak. Clear the cache and the queue goes with it.
-            </p>
+            <StorageNote subject="the queue" />
             <Link href="/" className="font-mono text-xs text-ink-muted hover:text-lamp">
               map a repo →
             </Link>

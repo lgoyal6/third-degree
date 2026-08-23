@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
+import AccountSync from "@/components/AccountSync";
 
 const bricolage = Bricolage_Grotesque({
   variable: "--font-bricolage",
@@ -34,7 +35,12 @@ export default function RootLayout({
       lang="en"
       className={`${bricolage.variable} ${plexSans.variable} ${plexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        {/* Keeps the local streak, queue and shelf in step with the account,
+            for anyone who has one (§10a). Renders nothing. */}
+        <AccountSync />
+      </body>
     </html>
   );
 }
