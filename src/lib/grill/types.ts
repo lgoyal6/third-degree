@@ -42,6 +42,8 @@ export interface Attempt {
   answer: string;
   /** Answers given to this question. Only Learn mode allows more than one. */
   tries?: number;
+  /** Defend only: the clock ran out before this answer landed. */
+  timedOut?: boolean;
   score: number | null; // null = grading unavailable, excluded from total
   feedback: string;
   latencyMs: number;
@@ -54,13 +56,16 @@ export interface GrillSession {
   id: string;
   slug: string;
   /**
-   * §4's two modes. Absent means grill, so sessions created before Learn mode
-   * existed keep working. Grill is assessment: clock on, no help, share card.
-   * Learn is the retention half: companion on, hints on the live question, a
-   * second try at a miss, and no share card, because help and assessment never
-   * coexist in one mode.
+   * §4's modes. Absent means grill, so sessions created before the others
+   * existed keep working. Grill is assessment-lite: clock on, no help, share
+   * card. Learn is the retention half: companion on, hints on the live
+   * question, a second try at a miss, and no share card. Defend is the
+   * endgame: a server-side clock per question, no help of any kind, and
+   * nothing revealed until the recording at the end.
    */
-  mode?: "learn";
+  mode?: "learn" | "defend";
+  /** When the live question was served. Defend's clock runs from here. */
+  askedAt?: number;
   /** The map this session was built from, so the verdict can link on to Craft. */
   jobId?: string;
   /** Concepts the review queue asked to see again when this session started. */

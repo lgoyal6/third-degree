@@ -16,6 +16,11 @@ export async function POST(
     return NextResponse.json({ error: "Grilling not found." }, { status: 404 });
   }
 
+  // §4: Defend is unassisted. Not "no hints on the live question" — none.
+  if (session.mode === "defend") {
+    return NextResponse.json({ error: "Defend mode has no help." }, { status: 409 });
+  }
+
   let body: {
     questionId?: string;
     rung?: number;

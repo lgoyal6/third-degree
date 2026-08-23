@@ -68,6 +68,40 @@ export default async function SharePage({ params }: Props) {
           </div>
         )}
 
+        {/* Defend's output is the recording, not the number (§4): every
+            question, what they said, and the clock they said it on. */}
+        {session.mode === "defend" && (
+          <div className="mt-10 border-t border-paper-rule pt-5">
+            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-paper-muted">
+              the recording · timed, unassisted
+            </p>
+            <ol className="mt-4 flex flex-col gap-4">
+              {session.attempts.map((attempt, i) => {
+                const question = session.questions[i];
+                if (!question) return null;
+                const seconds = Math.round(attempt.latencyMs / 1000);
+                return (
+                  <li key={i} className="border-t border-paper-rule/60 pt-3 first:border-0 first:pt-0">
+                    <div className="flex items-baseline justify-between gap-4">
+                      <p className="text-sm">{question.prompt.replace(/`/g, "")}</p>
+                      <span className="shrink-0 font-mono text-xs text-paper-muted">
+                        {attempt.timedOut
+                          ? "out of time"
+                          : `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`}
+                        {" · "}
+                        {attempt.score === null ? "—" : attempt.score}
+                      </span>
+                    </div>
+                    <p className="mt-1 font-mono text-[11px] leading-relaxed text-paper-muted">
+                      {attempt.answer || "(nothing said)"}
+                    </p>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        )}
+
         <div className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t-2 border-paper-rule pt-6">
           <p className="font-mono text-xs text-paper-muted">
             paste a repo · 10 questions · no signup

@@ -34,6 +34,9 @@ async function prepare(
       dueTags: session.reviewing,
     });
     session.status = "ready";
+    // Defend's clock starts when there is something to answer, not when the
+    // request was made: question generation is not their time to lose.
+    session.askedAt = Date.now();
     await saveSession(session);
   } catch (err) {
     session.status = "error";
@@ -68,7 +71,12 @@ export async function POST(request: Request) {
       private: meta.private,
     },
     jobId: job.id,
-    mode: body.mode === "learn" ? ("learn" as const) : undefined,
+    mode:
+      body.mode === "learn"
+        ? ("learn" as const)
+        : body.mode === "defend"
+          ? ("defend" as const)
+          : undefined,
     // Concepts the browser says are due (§6 resurfacing). The queue lives on
     // the client until identity does, so this arrives with the request rather
     // than being read server-side.

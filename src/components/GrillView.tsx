@@ -52,6 +52,13 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
   const scrubs = useRef(0);
   const [showAnswer, setShowAnswer] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  // Defend's clock belongs to the server, so the countdown is anchored to it
+  // and derived on each tick rather than stored.
+  // Tagged with the deadline it was measured against: a leftover zero from the
+  // previous question would otherwise auto-submit the next one on sight.
+  const [clock_, setClock] = useState<{ deadline: number; remaining: number } | null>(null);
+  const skew = useRef(0);
+  const autoSent = useRef<string | null>(null);
   const questionShownAt = useRef<number | null>(null);
   const answerRef = useRef<HTMLTextAreaElement>(null);
 
@@ -66,6 +73,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
         return;
       }
       const data: ViewState = await res.json();
+      if (data.now) skew.current = data.now - Date.now();
       setState(data);
       if (data.status !== "preparing" && timer) clearInterval(timer);
     };
@@ -75,6 +83,23 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
       if (timer) clearInterval(timer);
     };
   }, [sessionId]);
+
+  // Defend: count down from when the server served the question, and submit
+  // whatever is in the box when it hits zero — that is what makes it a clock
+  // rather than a decoration.
+  const timed = state?.mode === "defend" && !state.finished && Boolean(state.askedAt && state.limitMs);
+  const deadline = (state?.askedAt ?? 0) + (state?.limitMs ?? 0);
+  useEffect(() => {
+    if (!timed) return;
+    const t = setInterval(
+      () => setClock({ deadline, remaining: Math.max(0, deadline - (Date.now() + skew.current)) }),
+      250,
+    );
+    return () => clearInterval(t);
+  }, [timed, deadline]);
+
+  // Only the current question's clock counts.
+  const remaining = timed && clock_?.deadline === deadline ? clock_.remaining : null;
 
   // Visible timer (Grill is Defend-lite: no help, clock on)
   useEffect(() => {
@@ -130,8 +155,8 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
     return () => clearInterval(t);
   }, [state?.mode, last, helping, answer]);
 
-  const submit = useCallback(async () => {
-    if (!answer.trim() || submitting) return;
+  const submit = useCallback(async (timedOut = false) => {
+    if ((!answer.trim() && !timedOut) || submitting) return;
     setSubmitting(true);
     try {
       const res = await fetch(`/api/grill/${sessionId}/answer`, {
@@ -139,13 +164,23 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           answer,
+          timedOut,
           latencyMs: Date.now() - (questionShownAt.current ?? Date.now()),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Couldn't grade that.");
-      setLast({ score: data.score, feedback: data.feedback, reveal: data.reveal, retry: data.retry });
       setState(data.state);
+      // Defend shows nothing between questions: no score, no reveal, no
+      // interstitial to read. The next question is simply there.
+      if (data.recorded) {
+        setAnswer("");
+        questionShownAt.current = Date.now();
+        setElapsed(0);
+        setTimeout(() => answerRef.current?.focus(), 0);
+        return;
+      }
+      setLast({ score: data.score, feedback: data.feedback, reveal: data.reveal, retry: data.retry });
       // A retry keeps the text so they can sharpen it rather than retype it.
       if (!data.retry) setAnswer("");
       // File the result against the concepts it tested once the question is
@@ -169,6 +204,13 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
       setSubmitting(false);
     }
   }, [answer, submitting, sessionId]);
+
+  useEffect(() => {
+    const live = state?.question?.id;
+    if (!timed || remaining !== 0 || !live || submitting || autoSent.current === live) return;
+    autoSent.current = live;
+    void submit(true);
+  }, [timed, remaining, state?.question?.id, submitting, submit]);
 
   const next = useCallback(() => {
     setLast(null);
@@ -389,6 +431,14 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
         <StreakBadge />
         {learn ? (
           <span className="text-ink-muted">learn mode</span>
+        ) : remaining !== null ? (
+          <span
+            className={`tabular-nums ${remaining < 15_000 ? "text-err" : remaining < 30_000 ? "text-attention" : "text-ink"}`}
+            aria-label="time remaining"
+          >
+            {String(Math.floor(remaining / 60_000)).padStart(2, "0")}:
+            {String(Math.floor((remaining % 60_000) / 1000)).padStart(2, "0")} left
+          </span>
         ) : (
           <span className="tabular-nums text-ink" aria-label="elapsed time">
             {String(Math.floor(elapsed / 60)).padStart(2, "0")}:{String(elapsed % 60).padStart(2, "0")}
@@ -474,7 +524,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                submit();
+                void submit();
               }
             }}
             placeholder="Type your answer. Specifics beat generalities — name files, functions, fields."
@@ -498,9 +548,10 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
           <div className="flex items-center justify-between">
             <p className="font-mono text-xs text-ink-muted">
               ⏎ submit · shift+⏎ newline{learn ? " · ? stuck" : ""} · esc quit
+              {state.mode === "defend" ? " · sent at zero, marked at the end" : ""}
             </p>
             <button
-              onClick={submit}
+              onClick={() => submit()}
               disabled={submitting || !answer.trim()}
               className="cursor-pointer rounded bg-lamp px-6 py-2.5 font-medium text-bg hover:bg-lamp-bright disabled:opacity-50"
             >
@@ -543,6 +594,12 @@ function ConceptTags({ tags }: { tags: string[] }) {
       ))}
     </span>
   );
+}
+
+/** mm:ss, for a recording where the time taken is part of the answer. */
+function clock(ms: number): string {
+  const total = Math.round(ms / 1000);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 }
 
 function renderPrompt(prompt: string) {
@@ -636,6 +693,11 @@ function ScoreScreen({ state }: { state: ViewState }) {
             {verdict}
           </p>
         </div>
+        {learn ? null : state.mode === "defend" ? (
+          <p className="mt-6 border-t border-paper-rule pt-4 font-mono text-xs text-paper-muted">
+            timed and unassisted · the link shares the whole recording, not just the number
+          </p>
+        ) : null}
         {state.repo.private ? (
           <p className="mt-6 border-t border-paper-rule pt-4 font-mono text-xs text-paper-muted">
             private repo · no share card, since the questions name your files
@@ -664,7 +726,9 @@ function ScoreScreen({ state }: { state: ViewState }) {
       )}
 
       <div className="flex items-center justify-between">
-        <h2 className="font-display text-xl font-semibold">The tape</h2>
+        <h2 className="font-display text-xl font-semibold">
+          {state.mode === "defend" ? "The recording" : "The tape"}
+        </h2>
         <StreakBadge />
       </div>
       <section aria-label="Review">
@@ -673,10 +737,18 @@ function ScoreScreen({ state }: { state: ViewState }) {
             <li key={i} className="rounded-md border border-line bg-surface p-5">
               <div className="flex items-baseline justify-between gap-4">
                 <p className="text-sm">{renderPrompt(a.prompt)}</p>
-                <span
-                  className={`font-mono text-sm ${a.score === null ? "text-ink-muted" : a.score >= 60 ? "text-ok" : a.score >= 30 ? "text-attention" : "text-err"}`}
-                >
-                  {a.score === null ? "—" : a.score}
+                <span className="flex shrink-0 items-baseline gap-3 font-mono text-sm">
+                  {/* Defend recorded the clock, so the clock is part of the record. */}
+                  {state.mode === "defend" && (
+                    <span className="text-xs text-ink-muted">
+                      {a.timedOut ? "out of time" : clock(a.latencyMs)}
+                    </span>
+                  )}
+                  <span
+                    className={`${a.score === null ? "text-ink-muted" : a.score >= 60 ? "text-ok" : a.score >= 30 ? "text-attention" : "text-err"}`}
+                  >
+                    {a.score === null ? "—" : a.score}
+                  </span>
                 </span>
               </div>
               <p className="mt-2 font-mono text-xs text-ink-muted">you said: {a.answer}</p>

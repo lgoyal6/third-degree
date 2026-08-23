@@ -24,8 +24,9 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
   const [grilling, setGrilling] = useState(false);
   const [expressError, setExpressError] = useState<string | null>(null);
 
-  // Learn mode is the same ladder with the companion on and the clock off (§4).
-  const startGrill = useCallback(async (mode?: "learn") => {
+  // §4's modes: learn adds the companion and drops the clock, defend does the
+  // opposite and shares the recording.
+  const startGrill = useCallback(async (mode?: "learn" | "defend") => {
     if (grilling) return;
     setGrilling(true);
     try {
@@ -296,6 +297,13 @@ export default function LessonDeck({ jobId }: { jobId: string }) {
             className="cursor-pointer font-mono text-xs text-ink-muted hover:text-lamp disabled:opacity-60"
           >
             I want to learn it, not be scored → hints on, clock off
+          </button>
+          <button
+            onClick={() => startGrill("defend")}
+            disabled={grilling}
+            className="cursor-pointer font-mono text-xs text-ink-muted hover:text-lamp disabled:opacity-60"
+          >
+            I have an interview → timed, no help, recorded
           </button>
           <button
             onClick={startExpress}
