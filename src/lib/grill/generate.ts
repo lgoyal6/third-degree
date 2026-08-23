@@ -455,9 +455,10 @@ export async function generateQuestions(
     snippetSet,
     routeHandlerQuestions(map),
     routeModelQuestions(root, map, graph),
-    // The reference graph answers the same seam question with sharper ground
-    // truth, so module-level imports step back to one when it produced any.
-    importQuestions(root, graph, callSites.length > 0 ? 1 : 2),
+    // Module-level imports are the weakest seam question now that the
+    // reference graph and history answer the same thing with exact keys, so it
+    // yields its slots to them and to the schema rename.
+    importQuestions(root, graph, Math.max(0, 2 - callSites.length - commits.length)),
     fieldRefQuestions(root, map, files),
   ];
 
@@ -474,8 +475,7 @@ export async function generateQuestions(
     ...callSites,
     ...commits,
     ...imports,
-    // One field rename is enough once history supplied a seam question of its own.
-    ...fieldRefs.slice(0, commits.length > 0 ? 1 : 2),
+    ...fieldRefs,
   ].slice(0, 10);
 
   if (questions.length < 3) {
