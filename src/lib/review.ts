@@ -23,6 +23,11 @@ export interface ReviewCard {
    * has to when the queue is capped.
    */
   seenAt?: number;
+  /**
+   * The §3 layer the concept was last tested at. It is what orders a derived
+   * curriculum: fundamentals before seams, without anybody authoring a syllabus.
+   */
+  layer?: number;
   /** Where it has come up, newest first. Cross-repo history is the point. */
   repos: string[];
   lastPrompt: string;
@@ -117,6 +122,8 @@ export function recordAnswer(input: {
   score: number | null;
   repo: string;
   prompt: string;
+  /** The §3 layer this question sat at. */
+  layer?: number;
   /** Answered with the ladder's help. Counts as a miss however it scored. */
   hinted?: boolean;
 }): ReviewCard[] {
@@ -131,7 +138,17 @@ export function recordAnswer(input: {
 
     const prev: ReviewCard =
       at === -1
-        ? { tag, attempts: 0, misses: 0, streak: 0, due: today, lastSeen: today, repos: [], lastPrompt: "", lastScore: null }
+        ? {
+            tag,
+            attempts: 0,
+            misses: 0,
+            streak: 0,
+            due: today,
+            lastSeen: today,
+            repos: [],
+            lastPrompt: "",
+            lastScore: null,
+          }
         : cards[at];
 
     const streak = missed ? 0 : prev.streak + 1;
@@ -143,6 +160,7 @@ export function recordAnswer(input: {
       due: localDate(missed ? 1 : INTERVALS[Math.min(streak, INTERVALS.length) - 1]),
       lastSeen: today,
       seenAt: Date.now(),
+      layer: input.layer ?? prev.layer,
       repos: [input.repo, ...prev.repos.filter((r) => r !== input.repo)].slice(0, REPO_CAP),
       lastPrompt: input.prompt.slice(0, PROMPT_CAP),
       lastScore: input.score,

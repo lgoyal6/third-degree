@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import ReviewLink from "@/components/ReviewLink";
 import ShelfLink from "@/components/ShelfLink";
 import AccountBadge from "@/components/AccountBadge";
+import PathLink from "@/components/PathLink";
 import type { RepoChoice } from "@/app/api/repos/route";
 
 const EXAMPLES = ["shadcn-ui/taxonomy", "steven-tey/precedent"];
@@ -231,6 +232,7 @@ export default function Start() {
 
         <div className="mt-12 flex flex-wrap items-center justify-center gap-5">
           <AccountBadge available={canConnect || repos !== null} />
+          <PathLink />
           <ShelfLink />
           <ReviewLink />
         </div>

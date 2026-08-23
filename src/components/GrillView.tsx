@@ -195,6 +195,7 @@ export default function GrillView({ sessionId }: { sessionId: string }) {
           score: data.score,
           repo: `${data.state.repo.owner}/${data.state.repo.name}`,
           prompt: graded.prompt,
+          layer: graded.layer,
           hinted: hinted.current.has(graded.id),
         });
       }

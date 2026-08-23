@@ -65,6 +65,7 @@ function cleanCards(raw: unknown): ReviewCard[] {
       due: date(card.due),
       lastSeen: date(card.lastSeen),
       seenAt: typeof card.seenAt === "number" ? num(card.seenAt, Date.now() + 86_400_000) : undefined,
+      layer: typeof card.layer === "number" ? num(card.layer, 5) || undefined : undefined,
       repos: (Array.isArray(card.repos) ? card.repos : []).slice(0, 4).map((r) => text(r, 120)).filter(Boolean),
       lastPrompt: text(card.lastPrompt, 200),
       lastScore: typeof card.lastScore === "number" ? num(card.lastScore, 100) : null,

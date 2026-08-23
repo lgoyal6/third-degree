@@ -228,7 +228,10 @@ export default function AccountView() {
           )}
         </section>
 
-        <footer className="pb-10">
+        <footer className="flex items-center gap-5 pb-10">
+          <Link href="/path" className="font-mono text-xs text-ink-muted hover:text-lamp">
+            your path
+          </Link>
           <Link href="/" className="font-mono text-xs text-ink-muted hover:text-lamp">
             back to the start
           </Link>

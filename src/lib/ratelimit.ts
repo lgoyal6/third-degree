@@ -13,6 +13,7 @@ const LIMITS = {
   craft: { tokens: 8, window: "1 h" },
   // A cram is several grills: one checkout and one generation per repo.
   cram: { tokens: 2, window: "1 h" },
+  curriculum: { tokens: 12, window: "1 h" },
   express: { tokens: 20, window: "1 h" },
   hint: { tokens: 80, window: "1 h" },
 } as const;
