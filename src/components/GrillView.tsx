@@ -689,7 +689,15 @@ function ScoreScreen({ state }: { state: ViewState }) {
         </ol>
       </section>
 
-      <footer className="flex items-center gap-5 pb-10">
+      <footer className="flex flex-wrap items-center gap-5 pb-10">
+        {state.jobId && (
+          <Link
+            href={`/map/${state.jobId}/craft`}
+            className="font-mono text-xs text-lamp hover:text-lamp-bright"
+          >
+            what to upgrade next →
+          </Link>
+        )}
         <Link href="/" className="font-mono text-xs text-ink-muted hover:text-lamp">
           map another repo
         </Link>

@@ -101,6 +101,17 @@ export interface LessonCard {
   evidence: string[]; // repo-relative paths that exist in the map
 }
 
+/** §8's CraftItem: one concrete upgrade, shown as a diff against their code. */
+export interface CraftItem {
+  category: "ui" | "accessibility" | "states" | "hardening";
+  file: string;
+  /** Where `before` was found in the file, so the diff can be located. */
+  startLine: number;
+  before: string;
+  after: string;
+  rationale: string;
+}
+
 export interface CodeMap {
   meta?: RepoMeta;
   sha?: string; // the commit this map was built from (BUILD_PLAN §8)
@@ -116,6 +127,7 @@ export interface CodeMap {
   graph?: { nodes: DepNode[]; edges: DepEdge[] };
   summary?: MapSummary;
   lessons?: LessonCard[];
+  craft?: CraftItem[];
 }
 
 export interface MapJob {

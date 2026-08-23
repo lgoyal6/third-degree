@@ -31,6 +31,7 @@ export async function POST(request: Request) {
   // the score comes straight off the graph the map already built.
   const meta = job.map.meta;
   const session = await createSession({
+    jobId: job.id,
     status: "ready",
     repo: {
       owner: meta.owner,

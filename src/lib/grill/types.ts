@@ -61,6 +61,8 @@ export interface GrillSession {
    * coexist in one mode.
    */
   mode?: "learn";
+  /** The map this session was built from, so the verdict can link on to Craft. */
+  jobId?: string;
   /** Concepts the review queue asked to see again when this session started. */
   reviewing?: string[];
   /**

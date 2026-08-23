@@ -67,6 +67,7 @@ export async function POST(request: Request) {
       description: meta.description,
       private: meta.private,
     },
+    jobId: job.id,
     mode: body.mode === "learn" ? ("learn" as const) : undefined,
     // Concepts the browser says are due (§6 resurfacing). The queue lives on
     // the client until identity does, so this arrives with the request rather

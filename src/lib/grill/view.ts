@@ -7,6 +7,7 @@ export interface GrillView {
   slug: string;
   status: GrillSession["status"];
   mode: "grill" | "learn";
+  jobId?: string;
   error?: string;
   repo: GrillSession["repo"];
   frameworks: string[];
@@ -44,6 +45,7 @@ export function publicView(session: GrillSession): GrillView {
     slug: session.slug,
     status: session.status,
     mode: session.mode === "learn" ? "learn" : "grill",
+    jobId: session.jobId,
     error: session.error,
     repo: session.repo,
     frameworks: session.frameworks,

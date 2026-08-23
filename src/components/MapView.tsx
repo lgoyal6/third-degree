@@ -388,6 +388,12 @@ export default function MapView({ jobId }: { jobId: string }) {
               {express ? "clearing the room…" : "or: I already know this repo → one question, one shot"}
             </button>
             {expressError && <p className="mt-2 font-mono text-xs text-err">{expressError}</p>}
+            <Link
+              href={`/map/${jobId}/craft`}
+              className="mt-3 block font-mono text-xs text-ink-muted hover:text-lamp"
+            >
+              or: show me what to upgrade — diffs against this code
+            </Link>
           </div>
         </section>
       )}
