@@ -1,6 +1,6 @@
 # Build Plan - working title "Anti-larp"
 
-> Hand this to Claude Code. Work through the milestones in order.
+> Milestones are ordered; work them in order.
 > **M0 + M1 is the launch.** Everything after ships to real users, not toward a someday-launch.
 
 ---
