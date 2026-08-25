@@ -54,6 +54,52 @@ Abuse controls are in the ingest path: a 150 MB repo cap, per-stage timeouts, an
 
 Interrogation-lamp amber on warm charcoal, Bricolage Grotesque / IBM Plex, dark-first, keyboard-first, `prefers-reduced-motion` respected. Tokens and rationale: [design-system/third-degree/MASTER.md](./design-system/third-degree/MASTER.md).
 
+## Mechanism, drawn
+
+### A run, end to end
+
+```mermaid
+flowchart LR
+  UI["Browser<br/>polls every 800 ms"]
+  R[("Upstash Redis<br/>the only state two invocations share")]
+
+  UI -->|"POST /api/map"| MAP["/api/map<br/>rate limit, parse repo"]
+  MAP -->|"job id, before any indexing"| UI
+  MAP -.->|"after(), same invocation"| IDX["runIndex: tarball into tmpdir,<br/>walk, stack, routes, dep graph,<br/>data model, summary"]
+  IDX -->|"updateJob after every stage"| R
+  R -->|"GET /api/map/:id is a bare Redis read"| UI
+
+  UI -->|"POST /api/grill with the job id"| GRILL["/api/grill<br/>session opens as preparing"]
+  GRILL -.->|"after()"| GEN["fetchRepo pinned to map.sha,<br/>then generateQuestions"]
+  GEN -->|"status ready"| R
+  R -->|"GET /api/grill/:id"| UI
+
+  style IDX fill:#3b2a10,stroke:#f5a524,color:#fdf6e8
+  style GEN fill:#3b2a10,stroke:#f5a524,color:#fdf6e8
+```
+
+`POST /api/map` answers with a job id before any indexing has happened, and the pipeline keeps running in that same invocation through `after()` - which is why the route sets `maxDuration = 300` instead of sizing for the reply. There is no queue and no worker: Redis is the only thing two invocations share, so each stage writes a partial map and `GET /api/map/:id` is a bare read of it. A grill started from a map re-fetches the commit the map recorded (`map.sha`), not HEAD, so questions cannot be generated against a tree the map never saw.
+
+### What the model is allowed to score
+
+```mermaid
+flowchart TD
+  A["POST /api/grill/:id/answer"] --> B{"kind is overview?"}
+  B -->|yes| C["gradeOverviewAnswer: hub coverage weighted<br/>by import degree, minus 10 per invented file"]
+  B -->|no| D{"route-handler with<br/>exactly one file?"}
+  D -->|yes| E["gradeSingleFile: hit or miss"]
+  D -->|no| F{"groundTruth.files?"}
+  F -->|yes| G["gradeFileList: F1 over the affected-file set"]
+  F -->|no| H{"groundTruth.names?"}
+  H -->|yes| I["gradeNameSet: recall, minus 15 for every<br/>model named that the route never touches"]
+  H -->|no| J["gradeSnippetAnswer: the only branch<br/>that opens an Anthropic client"]
+  J --> K["groundedness caps whatever the model returned"]
+
+  style J fill:#3b2a10,stroke:#f5a524,color:#fdf6e8
+```
+
+`gradeAnswer` is an ordered cascade, and only the last branch constructs an Anthropic client. Everything above it is set arithmetic over ground truth computed at generation time. When the grading call is unavailable or the model refuses, the attempt scores `null` and drops out of the average rather than counting as a zero.
+
 ## Status
 
 - ✅ **M0 - the Map** (guided tour, dependency graph, progressive render)
@@ -74,3 +120,12 @@ npm run dev
 Open http://localhost:3000, paste a repo, take the tour, then sit down for the grilling.
 
 Stack: Next.js 16 · React 19 · TypeScript · Tailwind 4 · d3-force · Upstash Redis · Vercel · Anthropic API (structured outputs, `claude-opus-4-8`).
+
+## Deploying it
+
+Vercel, as a stock Next.js build. There is no `vercel.json` because nothing needs overriding, but two things have to be true of wherever it runs:
+
+- **`KV_REST_API_URL` and `KV_REST_API_TOKEN` are not optional.** `Redis.fromEnv()` reads those exact names, and map jobs, grill sessions and the per-IP rate limits all live there with no in-memory fallback. `vercel integration add upstash/upstash-kv` provisions them; `vercel env pull .env.local` brings them down for local work.
+- **The invocation has to survive the response.** `/api/map`, `/api/grill`, `/api/cram` and the craft route export `maxDuration = 300` and do their real work inside `after()`. A host that tears the function down when the reply is sent leaves the job parked mid-stage in Redis and the client polling forever.
+
+`ANTHROPIC_API_KEY` and `GITHUB_TOKEN` are optional and degrade to deterministic output and to GitHub's unauthenticated rate limit. Private-repo support needs `GITHUB_OAUTH_CLIENT_ID` and `GITHUB_OAUTH_CLIENT_SECRET` on an OAuth App whose callback is `<your-origin>/api/auth/github/callback`; with either missing, `oauthConfigured()` is false and the connect-for-private-repos link never renders.
