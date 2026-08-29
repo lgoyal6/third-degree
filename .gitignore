@@ -48,3 +48,6 @@ next-env.d.ts
 # demo recording: kept out of git, it is a build artifact
 docs/submission/*.mp4
 docs/submission/*.webm
+
+# graphify knowledge graph (local index, not source)
+graphify-out/
