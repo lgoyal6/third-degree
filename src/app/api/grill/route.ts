@@ -6,8 +6,11 @@ import { walkRepo } from "@/lib/indexer/walk";
 import { generateQuestions } from "@/lib/grill/generate";
 import { createSession, getSession, saveSession } from "@/lib/grill/store";
 import { checkLimit } from "@/lib/ratelimit";
-import { sessionToken } from "@/lib/auth/github";
+import { currentSession } from "@/lib/auth/github";
 import { normalizeTags } from "@/lib/learn/tags";
+import { loadRankerModel } from "@/lib/ranker/artifact";
+import { assignArm, EXPERIMENT, logExposure, unitHash } from "@/lib/ranker/experiment";
+import type { TrainedModel } from "@/lib/ranker/model";
 
 // Enough to carry a real backlog, few enough that the prompt stays a prompt.
 const MAX_DUE_TAGS = 12;
@@ -20,6 +23,7 @@ async function prepare(
   ref: { owner: string; repo: string },
   mapJobId: string,
   userToken?: string,
+  rankModel?: TrainedModel,
 ) {
   const [session, job] = await Promise.all([getSession(sessionId), getJob(mapJobId)]);
   if (!session || !job) return;
@@ -32,6 +36,7 @@ async function prepare(
     session.questions = await generateQuestions(root, job.map, files, {
       token: userToken,
       dueTags: session.reviewing,
+      rankModel,
     });
     session.status = "ready";
     // Defend's clock starts when there is something to answer, not when the
@@ -49,7 +54,7 @@ export async function POST(request: Request) {
   const limited = await checkLimit(request, "grill");
   if (limited) return limited;
 
-  let body: { jobId?: string; mode?: string; dueTags?: unknown };
+  let body: { jobId?: string; mode?: string; dueTags?: unknown; clientId?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -61,6 +66,23 @@ export async function POST(request: Request) {
   }
 
   const meta = job.map.meta;
+
+  // Ranking holdout: deterministic arm per unit. Unit preference: signed-in
+  // GitHub id, then the browser's stable anonymous id, then a per-session id
+  // (weakest, but it keeps one session internally consistent). Raw ids are
+  // hashed before they touch storage.
+  const gh = await currentSession();
+  const clientId =
+    typeof body.clientId === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(body.clientId)
+      ? body.clientId
+      : undefined;
+  const [unitId, unitSource] = gh?.userId
+    ? ([gh.userId, "github"] as const)
+    : clientId
+      ? ([clientId, "client"] as const)
+      : ([crypto.randomUUID(), "session"] as const);
+  const arm = assignArm(unitId);
+
   const session = await createSession({
     status: "preparing",
     repo: {
@@ -83,12 +105,24 @@ export async function POST(request: Request) {
     reviewing: Array.isArray(body.dueTags)
       ? normalizeTags(body.dueTags as (string | null | undefined)[], MAX_DUE_TAGS)
       : undefined,
+    exp: { experiment: EXPERIMENT, arm, unit: unitHash(unitId), unitSource },
     frameworks: job.map.stack?.frameworks ?? [],
     modelNames: (job.map.models ?? []).map((m) => m.name),
     questions: [],
   });
 
-  const token = await sessionToken();
-  after(() => prepare(session.id, { owner: meta.owner, repo: meta.name }, job.id, token));
+  const rankModel = arm === "learned" ? loadRankerModel() : undefined;
+  after(async () => {
+    await logExposure({
+      t: Date.now(),
+      experiment: EXPERIMENT,
+      arm,
+      unit: unitHash(unitId),
+      unitSource,
+      sessionId: session.id,
+      modelVersion: rankModel?.version,
+    });
+    await prepare(session.id, { owner: meta.owner, repo: meta.name }, job.id, gh?.token, rankModel);
+  });
   return NextResponse.json({ id: session.id });
 }
