@@ -1,0 +1,25 @@
+{
+  "datasetVersion": "v1",
+  "file": "data/ranking/v1/attempts.jsonl",
+  "sha256": "d1eb7abca8fa0bc58a477f61e50cdcd504013b61a81d7a188afbc17c153ad64d",
+  "rows": 89,
+  "labeledRows": 88,
+  "sessions": 43,
+  "repos": {
+    "vercel/chatbot": 83,
+    "sindresorhus/p-limit": 4,
+    "lgoyal6/third-degree": 2
+  },
+  "timeRange": {
+    "from": "2026-08-17T20:45:13.322Z",
+    "to": "2026-08-23T19:03:50.038Z"
+  },
+  "splits": {
+    "primaryCutoff": "2026-08-23T00:00:00.000Z",
+    "evalRepos": [
+      "sindresorhus/p-limit",
+      "lgoyal6/third-degree"
+    ]
+  },
+  "provenance": "Built by scripts/rank-dataset.ts from the product's stored grill sessions (first-party interaction events). No synthetic outcomes, no answer text, no prompts; session ids hashed; private repos excluded."
+}
