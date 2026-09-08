@@ -10,6 +10,8 @@ import { findHotspots, type Hotspot } from "../indexer/hotspots";
 import { mentionsPath, mineCommit, pathWords, type MinedCommit } from "../indexer/history";
 import type { ContextCode, GrillQuestion } from "./types";
 import { KIND_TAGS, kindsForTags, normalizeTags } from "../learn/tags";
+import { rankWithinLayers } from "../ranker/rank";
+import type { TrainedModel } from "../ranker/model";
 
 const CODE_EXTS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);
 
@@ -524,7 +526,16 @@ export async function generateQuestions(
   root: string,
   map: CodeMap,
   files: FileEntry[],
-  opts: { token?: string; dueTags?: string[] } = {},
+  opts: {
+    token?: string;
+    dueTags?: string[];
+    /**
+     * The learned re-ranker, passed only for sessions assigned to the learned
+     * experiment arm. Absent, invalid, or out-of-distribution input all mean
+     * the assembled (baseline) order below is returned untouched.
+     */
+    rankModel?: TrainedModel;
+  } = {},
 ): Promise<GrillQuestion[]> {
   const graph = buildImportGraph(root, files);
   const dueTags = opts.dueTags ?? [];
@@ -585,5 +596,7 @@ export async function generateQuestions(
       "Not enough analyzable structure to grill — TS/JS repos with routes, imports, or a schema work best right now.",
     );
   }
-  return questions;
+  // The ladder itself never moves; the learned model (when present and valid)
+  // only reorders within a layer. Without it this is exactly the list above.
+  return rankWithinLayers(questions, { dueTags }, opts.rankModel);
 }

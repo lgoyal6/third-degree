@@ -1,0 +1,90 @@
+{
+  "version": "lr-v1",
+  "featureNames": [
+    "layer",
+    "tier3",
+    "dueSim",
+    "kindMissRate",
+    "kindSupport",
+    "prereqReadiness",
+    "repoCoverage",
+    "priorCompletion",
+    "recency"
+  ],
+  "weights": [
+    1.8334450381872296,
+    0.8430742016704194,
+    0,
+    -1.1492629662877165,
+    -0.7629348126014833,
+    1.9658099329867147,
+    1.2031335925969104,
+    -0.14366792812988147,
+    1.1663250061164228
+  ],
+  "bias": 0.10732311827114774,
+  "mean": [
+    0.6814814814814815,
+    0.11111111111111112,
+    0,
+    0.47636040907454746,
+    0.38237363193933993,
+    0.521013071895425,
+    0.5603730780809527,
+    0.8168356900515783,
+    0.23139564504335694
+  ],
+  "std": [
+    0.35801617699539484,
+    0.3142696805273544,
+    1,
+    0.2558458902927398,
+    0.2570073179951496,
+    0.16692032952089655,
+    0.34441725920149063,
+    0.18416929769252718,
+    0.4124150166999146
+  ],
+  "zClip": 6,
+  "seenKinds": [
+    "field-refs",
+    "fundamental",
+    "imports",
+    "overview",
+    "route-handler",
+    "route-models"
+  ],
+  "kindStats": {
+    "route-handler": {
+      "attempts": 8,
+      "misses": 4
+    },
+    "route-models": {
+      "attempts": 2,
+      "misses": 0
+    },
+    "imports": {
+      "attempts": 4,
+      "misses": 4
+    },
+    "field-refs": {
+      "attempts": 4,
+      "misses": 4
+    },
+    "fundamental": {
+      "attempts": 5,
+      "misses": 2
+    },
+    "overview": {
+      "attempts": 22,
+      "misses": 9
+    }
+  },
+  "globalMissRate": 0.5111111111111111,
+  "trainedOn": {
+    "datasetVersion": "v1",
+    "sha256": "d1eb7abca8fa0bc58a477f61e50cdcd504013b61a81d7a188afbc17c153ad64d",
+    "rows": 45,
+    "positives": 23
+  }
+}
