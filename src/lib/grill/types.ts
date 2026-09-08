@@ -75,6 +75,16 @@ export interface GrillSession {
   /** Concepts the review queue asked to see again when this session started. */
   reviewing?: string[];
   /**
+   * Ranking-holdout assignment, stamped at creation so attempts can be joined
+   * to their arm later. `unit` is hashed; the raw id never lands in a session.
+   */
+  exp?: {
+    experiment: string;
+    arm: "baseline" | "learned";
+    unit: string;
+    unitSource: "github" | "client" | "session";
+  };
+  /**
    * Ladder rungs taken on a question before answering it, by question id. Only
    * Learn mode can produce these, and they are folded into the attempt's
    * hintsUsed when the answer finally lands.

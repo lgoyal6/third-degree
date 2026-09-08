@@ -8,6 +8,7 @@ import StreakBadge from "@/components/StreakBadge";
 import StorageNote from "@/components/StorageNote";
 import { readCards } from "@/lib/review";
 import { readShelf } from "@/lib/shelf";
+import { clientId } from "@/lib/client-id";
 import type { Curriculum, Module } from "@/lib/learn/curriculum";
 import type { Level } from "@/lib/learn/mastery";
 
@@ -69,7 +70,12 @@ export default function PathView() {
         const res = await fetch("/api/grill", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ jobId: repo.jobId, mode: "learn", dueTags: module.tags }),
+          body: JSON.stringify({
+            jobId: repo.jobId,
+            mode: "learn",
+            dueTags: module.tags,
+            clientId: clientId(),
+          }),
         });
         const body = await res.json();
         if (!res.ok) throw new Error(body.error ?? "Couldn't start that.");
