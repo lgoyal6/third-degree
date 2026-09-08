@@ -12,7 +12,7 @@
  * assigned yet, and this harness makes no claim about it.
  */
 import { bootstrapCI, brier, logLoss, mulberry32, mrr, ndcgAtK, recallAtK } from "../src/lib/ranker/metrics";
-import { predict, type TrainedModel } from "../src/lib/ranker/model";
+import { predict } from "../src/lib/ranker/model";
 import {
   assertNoLeakage,
   buildExamples,
@@ -21,9 +21,7 @@ import {
   repoSlices,
   type Example,
   type SessionGroup,
-  type Split,
 } from "../src/lib/ranker/split";
-import { FEATURE_NAMES } from "../src/lib/ranker/features";
 import { fitModel, loadFrozenDataset } from "./rank-common";
 
 const K = 3;
