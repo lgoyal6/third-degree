@@ -40,6 +40,7 @@ export default function RootLayout({
         {/* Keeps the local streak, queue and shelf in step with the account,
             for anyone who has one (§10a). Renders nothing. */}
         <AccountSync />
+        <footer className="px-6 py-4 text-center text-sm text-ink-muted"><a href="https://github.com/lgoyal6/third-degree" target="_blank" rel="noopener noreferrer" className="underline hover:text-ink">GitHub</a></footer>
       </body>
     </html>
   );
