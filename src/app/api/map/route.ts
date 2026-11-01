@@ -11,9 +11,6 @@ import { sessionToken } from "@/lib/auth/github";
 export const maxDuration = 300;
 
 export async function POST(request: Request) {
-  const limited = await checkLimit(request, "map");
-  if (limited) return limited;
-
   let body: { url?: string };
   try {
     body = await request.json();
@@ -28,8 +25,18 @@ export async function POST(request: Request) {
     );
   }
   // Read the token here: after() runs once the request context is gone.
-  const token = await sessionToken();
-  const job = await createJob(url);
-  after(() => runIndex(job.id, url, token));
-  return NextResponse.json({ id: job.id });
+  try {
+    const limited = await checkLimit(request, "map");
+    if (limited) return limited;
+    const token = await sessionToken();
+    const job = await createJob(url);
+    after(() => runIndex(job.id, url, token));
+    return NextResponse.json({ id: job.id });
+  } catch (error) {
+    console.error("Repository indexing could not start", error);
+    return NextResponse.json(
+      { error: "Repository indexing is temporarily unavailable. You can still explore the sample walkthrough at /demo." },
+      { status: 503 },
+    );
+  }
 }
