@@ -39,8 +39,13 @@ export default function Start() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: target }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch {
+        throw new Error("Repository indexing is temporarily unavailable. Try the sample walkthrough below.");
+      }
       if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      if (typeof data.id !== "string") throw new Error("The server did not return a repository map. Please try again.");
       router.push(`/map/${data.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -87,6 +92,9 @@ export default function Start() {
           Third Degree
         </h1>
         <p className="mt-3 text-ink-muted">You built it. Now own it.</p>
+        <a href="/demo" className="mt-5 inline-block text-sm text-lamp underline underline-offset-4">
+          Explore a sample map and lesson, no signup or API key
+        </a>
 
         <form
           className="mt-10"
